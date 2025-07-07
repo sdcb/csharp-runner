@@ -33,4 +33,4 @@ jobs:
         
     - name: Push container
       run: |
-        docker push ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/chats:${{ needs.build-fe.outputs.full_ver }}-${{ matrix.tag }}
+        docker push ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/csharp-runner-worker:r-${{ github.run_number }}-${{ matrix.tag }}
