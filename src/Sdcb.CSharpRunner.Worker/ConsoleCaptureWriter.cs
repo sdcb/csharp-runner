@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using System.Threading.Channels;
 
-namespace Sdcb.CSharpRunner.Core;
+namespace Sdcb.CSharpRunner.Worker;
 
 public sealed class ConsoleCaptureWriter(
     ChannelWriter<SseResponse> channel,

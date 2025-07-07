@@ -6,7 +6,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading.Channels;
 
-namespace Sdcb.CSharpRunner.Core;
+namespace Sdcb.CSharpRunner.Worker;
 
 public static class Handlers
 {

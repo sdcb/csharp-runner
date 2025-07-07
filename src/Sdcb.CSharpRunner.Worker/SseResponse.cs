@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Sdcb.CSharpRunner.Core;
+namespace Sdcb.CSharpRunner.Worker;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
 [JsonDerivedType(typeof(StdoutSseResponse), "stdout")]

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace Sdcb.CSharpRunner.Core;
+namespace Sdcb.CSharpRunner.Worker;
 
 internal class Program
 {
