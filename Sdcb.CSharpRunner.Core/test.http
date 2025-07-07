@@ -1,0 +1,11 @@
+﻿@url=http://localhost:5105
+
+### Ready Page
+GET {{url}}
+
+### Run Code
+POST {{url}}/run
+Content-Type: application/json
+{
+  "code": "Console.Write(3);"
+}
