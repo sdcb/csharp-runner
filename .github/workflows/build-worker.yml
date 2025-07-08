@@ -29,7 +29,7 @@ jobs:
 
     - name: Tag container with run number
       run: |
-        docker tag worker ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/csharp-runner-worker:${{ needs.build-fe.outputs.full_ver }}-${{ matrix.tag }}
+        docker tag worker ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/csharp-runner-worker:r-${{ github.run_number }}-${{ matrix.tag }}
         
     - name: Push container
       run: |
