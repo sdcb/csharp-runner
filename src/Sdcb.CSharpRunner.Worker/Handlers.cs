@@ -23,10 +23,6 @@ public static class Handlers
         return Results.Content(html, "text/html; charset=utf-8");
     }
 
-    private static JsonSerializerOptions jsonOpt = new()
-    {
-        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-    };
     private static SemaphoreSlim evalLock = new(1, 1);
     private static ScriptOptions scriptOpt { get; } = ScriptOptions.Default
         .AddReferences(typeof(object).Assembly)
@@ -89,7 +85,7 @@ public static class Handlers
                 oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Start streaming...");
                 await foreach (SseResponse msg in channel.Reader.ReadAllAsync(cts.Token))
                 {
-                    string json = JsonSerializer.Serialize(msg, jsonOpt);
+                    string json = JsonSerializer.Serialize(msg, AppJsonContext.Default.SseResponse);
                     await ctx.Response.WriteAsync($"data: {json}\n\n", cts.Token);
                     await ctx.Response.Body.FlushAsync(cts.Token);
                     oldOut.WriteLine($"Elased: {sw.ElapsedMilliseconds}ms, Sent: {json}");
@@ -147,7 +143,7 @@ public static class Handlers
                 if (Interlocked.Increment(ref runCount) >= maxRuns)
                 {
                     Console.WriteLine($"Max runs reached: {maxRuns}");
-                    life.StopApplication(); // 达到最大次数，停止应用
+                    life.StopApplication();
                 }
                 else
                 {
