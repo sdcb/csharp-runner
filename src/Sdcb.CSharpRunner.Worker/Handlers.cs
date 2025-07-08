@@ -2,7 +2,6 @@
 using Microsoft.CodeAnalysis.Scripting;
 using System.Data;
 using System.Diagnostics;
-using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Threading.Channels;
 
@@ -53,8 +52,10 @@ public static class Handlers
     public static async Task Run(HttpContext ctx, int maxRuns, IHostApplicationLifetime life)
     {
         Stopwatch sw = Stopwatch.StartNew();
+        Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Received request");
         RunCodeRequest request = await JsonSerializer.DeserializeAsync(ctx.Request.Body, AppJsonContext.Default.RunCodeRequest) 
             ?? throw new ArgumentException("Invalid request body", nameof(ctx));
+        Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Deserialized request");
 
         // SSE 头
         ctx.Response.Headers.ContentType = "text/event-stream; charset=utf-8";
@@ -62,6 +63,7 @@ public static class Handlers
 
         // 并发互斥
         await evalLock.WaitAsync(ctx.RequestAborted);
+        Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Acquired lock for evaluation.");
         try
         {
             Channel<SseResponse> channel = Channel.CreateUnbounded<SseResponse>();
@@ -94,7 +96,7 @@ public static class Handlers
 
             try
             {
-                oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Running code...");
+                oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Before executing code...");
                 result = await CSharpScript
                     .EvaluateAsync<object?>(request.Code, scriptOpt)
                     .WaitAsync(TimeSpan.FromMilliseconds(request.Timeout), ctx.RequestAborted);
@@ -156,9 +158,11 @@ public static class Handlers
         }
     }
 
-    internal static void Warmup()
+    internal static async Task Warmup()
     {
-        // 预热，避免第一次运行时加载慢
-        _ = CSharpScript.EvaluateAsync<int>("Console.WriteLine(\"Ready\");", scriptOpt);
+        HttpContext fakeHttpContext = new DefaultHttpContext();
+        fakeHttpContext.Request.Body = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(
+            new RunCodeRequest("Console.WriteLine(\"Ready\");"), AppJsonContext.Default.RunCodeRequest));
+        await Run(fakeHttpContext, 0, null!);
     }
 }
