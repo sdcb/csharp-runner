@@ -25,8 +25,8 @@ internal class Program
         {
             if (settings.Register)
             {
-                string serviceUrl = Register.GetServiceHttpUrl(app.Urls, settings.ExposedPort);
-                await Register.LoginAsWorker(settings.RegisterHostUrl, serviceUrl);
+                string serviceUrl = Register.GetServiceHttpUrl(app.Urls, settings.ExposedUrl);
+                await Register.LoginAsWorker(settings.RegisterHostUrl, serviceUrl, settings.MaxRuns);
             }
         });
 

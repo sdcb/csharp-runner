@@ -4,21 +4,22 @@ namespace Sdcb.CSharpRunner.Worker;
 
 public class Register
 {
-    public static async Task LoginAsWorker(string registerHostUrl, string serviceUrl)
+    public static async Task LoginAsWorker(string registerHostUrl, string workerUrl, int maxRuns)
     {
         using HttpClient client = new();
-        client.Timeout = TimeSpan.FromSeconds(5);
+        client.Timeout = TimeSpan.FromSeconds(100);
         int maxRetry = 3;
         for (int i = 0; i < maxRetry; i++)
         {
             try
             {
-                Console.WriteLine($"Attempting to register worker at {registerHostUrl} with service URL {serviceUrl} (Attempt {i + 1}/{maxRetry})");
+                Console.WriteLine($"Attempting to register worker at {registerHostUrl} with service URL {workerUrl} (Attempt {i + 1}/{maxRetry})");
                 // Attempt to register the worker
-                await client.PostAsync($"{registerHostUrl}/api/worker/login", new FormUrlEncodedContent(new Dictionary<string, string>
+                await client.PostAsJsonAsync($"{registerHostUrl}/api/worker/register", new RegisterWorkerRequest
                 {
-                    { "serviceUrl", serviceUrl }
-                }));
+                    WorkerUrl = workerUrl,
+                    MaxRuns = maxRuns
+                }, AppJsonContext.Default.RegisterWorkerRequest);
                 Console.WriteLine("Worker registered successfully.");
                 return; // Exit if successful
             }
@@ -34,10 +35,12 @@ public class Register
         }
     }
 
-    public static string GetServiceHttpUrl(ICollection<string> listeningUrls, int? exposedPort)
+    public static string GetServiceHttpUrl(ICollection<string> listeningUrls, string? exposedUrl)
     {
+        if (exposedUrl != null) return exposedUrl;
+
         string myIp = GetMyNonLoopbackIP();
-        int myPort = exposedPort ?? GetPortFromUrl(listeningUrls);
+        int myPort = GetPortFromUrl(listeningUrls);
         return $"http://{myIp}:{myPort}";
 
         static string GetMyNonLoopbackIP()

@@ -1,0 +1,8 @@
+﻿using System.Text.Json.Serialization;
+
+namespace Sdcb.CSharpRunner.Host;
+
+public record RunCodeRequest(
+    [property: JsonPropertyName("code")] string Code,
+    [property: JsonPropertyName("timeout")] int Timeout = 30_000
+);

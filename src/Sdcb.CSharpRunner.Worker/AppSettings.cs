@@ -8,13 +8,13 @@ public record AppSettings
 
     public required string RegisterHostUrl { get; init; }
 
-    public int? ExposedPort { get; init; }
+    public string? ExposedUrl { get; init; }
 
     public static AppSettings Load(IConfiguration config) => new AppSettings
     {
         MaxRuns = config.GetValue("MaxRuns", 0),
         Register = config.GetValue("Register", false),
         RegisterHostUrl = config.GetValue("RegisterHostUrl", string.Empty)!,
-        ExposedPort = config.GetValue<int?>("ExposedPort")
+        ExposedUrl = config.GetValue<string?>("ExposedUrl")
     };
 }

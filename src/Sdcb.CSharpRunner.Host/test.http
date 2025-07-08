@@ -1,0 +1,11 @@
+@Sdcb.CSharpRunner.Host_HostAddress = http://localhost:5050
+
+GET {{Sdcb.CSharpRunner.Host_HostAddress}}/weatherforecast/
+Accept: application/json
+
+### Run Code
+POST {{Sdcb.CSharpRunner.Host_HostAddress}}/api/runcode
+Content-Type: application/json
+{
+  "code": "for (int i = 0; i < 5; ++i) { Console.Write(i);Thread.Sleep(100); }"
+}
