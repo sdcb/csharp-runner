@@ -21,10 +21,8 @@ internal class Program
         IHostApplicationLifetime life = app.Services.GetRequiredService<IHostApplicationLifetime>();
 
         HttpContext fakeHttpContext = new DefaultHttpContext();
-        fakeHttpContext.Request.Body = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(new RunCodeRequest
-        {
-            Code = "Console.WriteLine(\"Ready\");"
-        }, AppJsonContext.Default.RunCodeRequest));
+        fakeHttpContext.Request.Body = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(
+            new RunCodeRequest("Console.WriteLine(\"Ready\");"), AppJsonContext.Default.RunCodeRequest));
         Handlers.Run(fakeHttpContext, 0, life).GetAwaiter().GetResult();
 
         app.MapGet("/", Handlers.GetHome);

@@ -2,8 +2,7 @@
 
 namespace Sdcb.CSharpRunner.Worker;
 
-public record RunCodeRequest
-{
-    [JsonPropertyName("code")]
-    public required string Code { get; init; }
-}
+public record RunCodeRequest(
+    [property: JsonPropertyName("code")] string Code,
+    [property: JsonPropertyName("timeout")] int Timeout = 30_000
+);

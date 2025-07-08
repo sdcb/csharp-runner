@@ -53,9 +53,8 @@ public static class Handlers
     public static async Task Run(HttpContext ctx, int maxRuns, IHostApplicationLifetime life)
     {
         Stopwatch sw = Stopwatch.StartNew();
-        using JsonDocument doc = await JsonDocument.ParseAsync(ctx.Request.Body);
-        string code = doc.RootElement.GetProperty("code").GetString()!;
-        int timeout = doc.RootElement.TryGetProperty("timeout", out JsonElement t) ? t.GetInt32() : 30_000;
+        RunCodeRequest request = await JsonSerializer.DeserializeAsync(ctx.Request.Body, AppJsonContext.Default.RunCodeRequest) 
+            ?? throw new ArgumentException("Invalid request body", nameof(ctx));
 
         // SSE 头
         ctx.Response.Headers.ContentType = "text/event-stream; charset=utf-8";
@@ -66,7 +65,7 @@ public static class Handlers
         try
         {
             Channel<SseResponse> channel = Channel.CreateUnbounded<SseResponse>();
-            using CancellationTokenSource cts = new(timeout);
+            using CancellationTokenSource cts = new(request.Timeout);
 
             object? result = null;
             Exception? execErr = null;
@@ -97,8 +96,8 @@ public static class Handlers
             {
                 oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Running code...");
                 result = await CSharpScript
-                    .EvaluateAsync<object?>(code, scriptOpt)
-                    .WaitAsync(TimeSpan.FromMilliseconds(timeout), ctx.RequestAborted);
+                    .EvaluateAsync<object?>(request.Code, scriptOpt)
+                    .WaitAsync(TimeSpan.FromMilliseconds(request.Timeout), ctx.RequestAborted);
                 oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Code executed successfully.");
                 if (result != null)
                 {
