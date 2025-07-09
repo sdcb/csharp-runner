@@ -1,15 +1,15 @@
-name: Build Worker
+name: Build Host
 on:
   push:
     branches:
       - master
     paths:
-      - .github/workflows/build-worker.yml
-      - src/Sdcb.CSharpRunner.Worker/**
+      - .github/workflows/build-host.yml
+      - src/Sdcb.CSharpRunner.Host/**
   workflow_dispatch:
 
 env:
-  DOCKER_ID: csharp-runner-worker
+  DOCKER_ID: csharp-runner-host
   
 jobs:
   build:
