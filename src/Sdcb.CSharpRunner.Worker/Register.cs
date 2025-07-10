@@ -13,13 +13,14 @@ public class Register
         {
             try
             {
-                Console.WriteLine($"Attempting to register worker at {registerHostUrl} with service URL {workerUrl} (Attempt {i + 1}/{maxRetry})");
+                Console.WriteLine($"({i + 1}/{maxRetry}) Attempting to register worker at {registerHostUrl} with service URL {workerUrl}, MaxRuns:{maxRuns}");
                 // Attempt to register the worker
-                await client.PostAsJsonAsync($"{registerHostUrl}/api/worker/register", new RegisterWorkerRequest
+                HttpResponseMessage resp = await client.PostAsJsonAsync($"{registerHostUrl}/api/worker/register", new RegisterWorkerRequest
                 {
                     WorkerUrl = workerUrl,
                     MaxRuns = maxRuns
                 }, AppJsonContext.Default.RegisterWorkerRequest);
+                resp.EnsureSuccessStatusCode();
                 Console.WriteLine("Worker registered successfully.");
                 return; // Exit if successful
             }
@@ -37,7 +38,7 @@ public class Register
 
     public static string GetServiceHttpUrl(ICollection<string> listeningUrls, string? exposedUrl)
     {
-        if (exposedUrl != null) return exposedUrl;
+        if (!string.IsNullOrWhiteSpace(exposedUrl)) return exposedUrl;
 
         string myIp = GetMyNonLoopbackIP();
         int myPort = GetPortFromUrl(listeningUrls);

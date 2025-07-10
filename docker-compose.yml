@@ -1,0 +1,19 @@
+services:
+  host:
+    image: sdcb/csharp-runner-host:latest
+    container_name: csharp-runner-host
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  worker:
+    image: sdcb/csharp-runner-worker:latest
+    environment:
+      - MaxRuns=1
+      - Register=true
+      - RegisterHostUrl=http://host:8080
+    restart: unless-stopped
+    depends_on:
+      - host
+    deploy:
+      replicas: 5

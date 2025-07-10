@@ -29,11 +29,11 @@ jobs:
 
     - name: Build container
       run: |
-        dotnet publish ./src/Sdcb.CSharpRunner.Worker/Sdcb.CSharpRunner.Worker.csproj -c Release --os ${{ matrix.os }} --arch ${{ matrix.arch }} /t:PublishContainer /p:ContainerRepository=worker ${{ needs.build-fe.outputs.msbuild_args }} ${{ matrix.args }}
+        dotnet publish ./src/Sdcb.CSharpRunner.Host/Sdcb.CSharpRunner.Host.csproj -c Release --os ${{ matrix.os }} --arch ${{ matrix.arch }} /t:PublishContainer /p:ContainerRepository=${{ env.DOCKER_ID }} ${{ needs.build-fe.outputs.msbuild_args }} ${{ matrix.args }}
 
     - name: Tag container with run number
       run: |
-        docker tag worker ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ env.DOCKER_ID }}:r-${{ github.run_number }}-${{ matrix.tag }}
+        docker tag ${{ env.DOCKER_ID }} ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ env.DOCKER_ID }}:r-${{ github.run_number }}-${{ matrix.tag }}
         
     - name: Push container
       run: |
