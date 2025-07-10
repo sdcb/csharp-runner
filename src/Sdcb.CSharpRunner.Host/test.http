@@ -7,5 +7,5 @@ Accept: application/json
 POST {{Sdcb.CSharpRunner.Host_HostAddress}}/api/runcode
 Content-Type: application/json
 {
-  "code": "for (int i = 0; i < 5; ++i) { Console.Write(i);Thread.Sleep(100); }"
+  "code": "5"
 }

@@ -3,7 +3,7 @@ services:
     image: sdcb/csharp-runner-host:latest
     container_name: csharp-runner-host
     ports:
-      - "8080:8080"
+      - "5050:8080"
     restart: unless-stopped
 
   worker:

@@ -86,7 +86,7 @@ public static class Handlers
                 oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Start streaming...");
                 await foreach (SseResponse msg in channel.Reader.ReadAllAsync(cts.Token))
                 {
-                    string json = JsonSerializer.Serialize(msg, AppJsonContext.Default.SseResponse);
+                    string json = JsonSerializer.Serialize(msg, AppJsonContext.FallbackOptions);
                     await ctx.Response.WriteAsync($"data: {json}\n\n", cts.Token);
                     await ctx.Response.Body.FlushAsync(cts.Token);
                     oldOut.WriteLine($"Elased: {sw.ElapsedMilliseconds}ms, Sent: {json}");
