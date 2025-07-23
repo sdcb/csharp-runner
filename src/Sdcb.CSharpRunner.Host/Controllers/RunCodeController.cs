@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Sdcb.CSharpRunner.Shared;
+using System.Text.Json;
 
 namespace Sdcb.CSharpRunner.Host.Controllers;
 
@@ -18,7 +19,7 @@ public class RunCodeController(IHttpClientFactory http) : ControllerBase
         try
         {
             bool started = false;
-            await foreach (Memory<byte> buffer in worker.Value.RunAsMemory(http, request, cancellationToken))
+            await foreach (SseResponse buffer in worker.Value.RunAsJson(http, request, cancellationToken))
             {
                 if (!started)
                 {
@@ -27,7 +28,9 @@ public class RunCodeController(IHttpClientFactory http) : ControllerBase
                     started = true;
                 }
 
-                await Response.Body.WriteAsync(buffer, cancellationToken);
+                await Response.Body.WriteAsync("data: "u8.ToArray(), cancellationToken);
+                await Response.Body.WriteAsync(JsonSerializer.SerializeToUtf8Bytes(buffer, AppJsonContext.Default.SseResponse), cancellationToken);
+                await Response.Body.WriteAsync("\n\n"u8.ToArray(), cancellationToken);
                 await Response.Body.FlushAsync(cancellationToken);
             }
             await Response.CompleteAsync();

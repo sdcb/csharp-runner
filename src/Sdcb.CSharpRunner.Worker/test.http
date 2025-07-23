@@ -7,5 +7,5 @@ GET {{url}}
 POST {{url}}/run
 Content-Type: application/json
 {
-  "code": "new []{ 1,2,3}"
+  "code": "return new []{ 1,2,3};"
 }

@@ -1,11 +1,9 @@
 @Sdcb.CSharpRunner.Host_HostAddress = http://localhost:5050
 
-GET {{Sdcb.CSharpRunner.Host_HostAddress}}/weatherforecast/
-Accept: application/json
-
 ### Run Code
 POST {{Sdcb.CSharpRunner.Host_HostAddress}}/api/runcode
 Content-Type: application/json
 {
-  "code": "5"
+  "code": "await Task.Delay(100);return 3+100;",
+  "timeout": 1000
 }

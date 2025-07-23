@@ -1,4 +1,5 @@
 ﻿using Sdcb.CSharpRunner.Shared;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -39,10 +40,11 @@ namespace Sdcb.CSharpRunner.Worker;
 [JsonSerializable(typeof(Dictionary<string, object>))]
 internal partial class AppJsonContext : JsonSerializerContext
 {
-    public static JsonSerializerOptions FallbackOptions = new()
+    public static JsonSerializerOptions FallbackOptions { get; } = new()
     {
         TypeInfoResolver = JsonTypeInfoResolver.Combine(
-            Default,
-            new DefaultJsonTypeInfoResolver())
+                Default,
+                new DefaultJsonTypeInfoResolver()),
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 }

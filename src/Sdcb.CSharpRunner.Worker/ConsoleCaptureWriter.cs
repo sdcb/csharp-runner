@@ -37,7 +37,7 @@ public sealed class ConsoleCaptureWriter(
         // ③ 即时推送 SSE
         SseResponse msg = isStdout
             ? new StdoutSseResponse { StdOutput = txt }
-            : new StdErrSseResponse { StdError = txt } as SseResponse;
+            : new StdErrSseResponse { StdError = txt };
 
         // TryWrite 保证在 Channel full 时不会阻塞脚本
         channel.TryWrite(msg);

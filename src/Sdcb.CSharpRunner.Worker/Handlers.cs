@@ -68,7 +68,7 @@ public static class Handlers
     {
         Stopwatch sw = Stopwatch.StartNew();
         Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Received request");
-        RunCodeRequest request = await JsonSerializer.DeserializeAsync(ctx.Request.Body, AppJsonContext.Default.RunCodeRequest) 
+        RunCodeRequest request = await JsonSerializer.DeserializeAsync(ctx.Request.Body, AppJsonContext.Default.RunCodeRequest)
             ?? throw new ArgumentException("Invalid request body", nameof(ctx));
         Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Deserialized request");
 
@@ -82,10 +82,9 @@ public static class Handlers
         try
         {
             Channel<SseResponse> channel = Channel.CreateUnbounded<SseResponse>();
-            using CancellationTokenSource cts = new(request.Timeout);
 
             object? result = null;
-            Exception? execErr = null;
+            string? execErr = null;
             Exception? compilationErr = null;
 
             // 重定向 Console
@@ -99,22 +98,22 @@ public static class Handlers
             Task writerTask = Task.Run(async () =>
             {
                 oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Start streaming...");
-                await foreach (SseResponse msg in channel.Reader.ReadAllAsync(cts.Token))
+                await foreach (SseResponse msg in channel.Reader.ReadAllAsync(default))
                 {
                     string json = JsonSerializer.Serialize(msg, AppJsonContext.FallbackOptions);
-                    await ctx.Response.WriteAsync($"data: {json}\n\n", cts.Token);
-                    await ctx.Response.Body.FlushAsync(cts.Token);
+                    await ctx.Response.WriteAsync($"data: {json}\n\n", default);
+                    await ctx.Response.Body.FlushAsync(default);
                     oldOut.WriteLine($"Elased: {sw.ElapsedMilliseconds}ms, Sent: {json}");
                 }
                 oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Finished streaming.");
-            }, cts.Token);
+            }, default);
 
             try
             {
                 oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Before executing code...");
+                using CancellationTokenSource cts = new(request.Timeout);
                 result = await CSharpScript
-                    .EvaluateAsync<object?>(request.Code, _scriptOpt)
-                    .WaitAsync(TimeSpan.FromMilliseconds(request.Timeout), ctx.RequestAborted);
+                    .EvaluateAsync<object?>(request.Code, _scriptOpt, cancellationToken: cts.Token);
                 oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Code executed successfully.");
                 if (result != null)
                 {
@@ -129,10 +128,15 @@ public static class Handlers
                     CompilerError = ex.ToString()
                 });
             }
+            catch (OperationCanceledException ex)
+            {
+                execErr = "Execution timed out after " + request.Timeout + "ms.";
+                channel.Writer.TryWrite(new ErrorSseResponse { Error = execErr });
+            }
             catch (Exception ex)
             {
-                execErr = ex;
-                channel.Writer.TryWrite(new ErrorSseResponse { Error = ex.ToString() });
+                execErr = ex.ToString();
+                channel.Writer.TryWrite(new ErrorSseResponse { Error = execErr });
             }
             finally
             {
