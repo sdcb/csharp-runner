@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace Sdcb.CSharpRunner.Host;
 
-public record Worker : IHaveMaxRuns
+public class Worker : IHaveMaxRuns
 {
     public required Uri Url { get; init; }
     public required int MaxRuns { get; init; }
@@ -38,5 +38,16 @@ public record Worker : IHaveMaxRuns
         {
             yield return item.Data;
         }
+    }
+
+    public override int GetHashCode() => Url.GetHashCode();
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is Worker other)
+        {
+            return Url == other.Url;
+        }
+        return false;
     }
 }
