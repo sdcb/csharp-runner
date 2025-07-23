@@ -128,7 +128,7 @@ public static class Handlers
                     CompilerError = ex.ToString()
                 });
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
                 execErr = "Execution timed out after " + request.Timeout + "ms.";
                 channel.Writer.TryWrite(new ErrorSseResponse { Error = execErr });

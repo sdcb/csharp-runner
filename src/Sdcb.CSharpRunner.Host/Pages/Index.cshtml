@@ -1,0 +1,416 @@
+﻿@page 
+@using Sdcb.CSharpRunner.Host
+@inject RoundRobinPool<Worker> db
+@model Sdcb.CSharpRunner.Host.Pages.IndexModel
+@{
+}
+
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>C# Runner Playground</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <style>
+        .playground-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .main-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+        .code-editor {
+            background: #2d3748;
+            border-radius: 10px;
+            color: #e2e8f0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            border: none;
+            resize: vertical;
+        }
+        .code-editor:focus {
+            background: #2d3748 !important;
+            color: #e2e8f0 !important;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+        .output-container {
+            background: #1a202c;
+            border-radius: 10px;
+            color: #e2e8f0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .run-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            padding: 12px 30px;
+            transition: all 0.3s ease;
+        }
+        .run-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+        .run-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .status-badge {
+            border-radius: 20px;
+            padding: 5px 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-ready {
+            background: #48bb78;
+            color: white;
+        }
+        .status-running {
+            background: #ed8936;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+        .output-line {
+            padding: 4px 8px;
+            margin: 2px 0;
+            border-radius: 4px;
+        }
+        .output-stdout {
+            border-left: 3px solid #48bb78;
+            background: rgba(72, 187, 120, 0.1);
+        }
+        .output-stderr {
+            border-left: 3px solid #f56565;
+            background: rgba(245, 101, 101, 0.1);
+        }
+        .output-result {
+            border-left: 3px solid #4299e1;
+            background: rgba(66, 153, 225, 0.1);
+        }
+        .output-error {
+            border-left: 3px solid #f56565;
+            background: rgba(245, 101, 101, 0.15);
+            color: #fed7d7;
+        }
+        .output-compiler-error {
+            border-left: 3px solid #ed8936;
+            background: rgba(237, 137, 54, 0.15);
+            color: #fbd38d;
+        }
+        .worker-info {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            padding: 5px 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        @@keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @@keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="playground-container">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-10">
+                <div class="main-card p-4">
+                    <!-- Header -->
+                    <div class="text-center mb-4">
+                        <h1 class="display-5 fw-bold text-primary mb-3">
+                            🚀 C# Runner Playground
+                        </h1>
+                        <div class="d-flex justify-content-center align-items-center gap-3 flex-wrap">
+                            <span class="status-badge status-ready">
+                                ✅ READY
+                            </span>
+                            <div class="worker-info">
+                                <strong>Workers:</strong> @db.Count
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Code Editor Section -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <label for="codeEditor" class="form-label fw-bold mb-2">
+                                💻 编写你的 C# 代码
+                            </label>
+                            <textarea id="codeEditor" class="form-control code-editor" rows="12" placeholder="在这里输入你的 C# 代码...">Console.WriteLine("Hello, C# Runner!");
+Console.WriteLine($"Current time: {DateTime.Now}");
+
+// 计算示例
+int result = 3 + 4;
+Console.WriteLine($"3 + 4 = {result}");
+
+// 返回结果
+result</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="row mb-4">
+                        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div>
+                                <label for="timeoutInput" class="form-label me-2">超时时间 (ms):</label>
+                                <input type="number" id="timeoutInput" class="form-control form-control-sm d-inline-block" style="width: 120px;" value="30000" min="1000" max="60000">
+                            </div>
+                            <div>
+                                <button id="runBtn" class="run-btn">
+                                    <span id="runBtnText">▶️ 运行代码</span>
+                                    <div id="runBtnSpinner" class="loading-spinner d-none"></div>
+                                </button>
+                                <button id="clearBtn" class="btn btn-outline-secondary ms-2">
+                                    🗑️ 清空输出
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Output Section -->
+                    <div class="row">
+                        <div class="col-12">
+                            <label class="form-label fw-bold mb-2">
+                                📤 执行结果
+                            </label>
+                            <div id="output" class="output-container p-3">
+                                <div class="text-muted">点击"运行代码"开始执行...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="text-center mt-4 pt-3 border-top">
+                        <small class="text-muted">
+                            了解更多信息，请访问 
+                            <a href="https://github.com/sdcb/csharp-runner" target="_blank" class="text-decoration-none">
+                                🔗 GitHub Repository
+                            </a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const codeEditor = document.getElementById('codeEditor');
+        const timeoutInput = document.getElementById('timeoutInput');
+        const runBtn = document.getElementById('runBtn');
+        const runBtnText = document.getElementById('runBtnText');
+        const runBtnSpinner = document.getElementById('runBtnSpinner');
+        const clearBtn = document.getElementById('clearBtn');
+        const output = document.getElementById('output');
+
+        let isRunning = false;
+
+        // 运行代码
+        runBtn.addEventListener('click', async () => {
+            if (isRunning) return;
+
+            const code = codeEditor.value.trim();
+            if (!code) {
+                alert('请输入要执行的代码');
+                return;
+            }
+
+            setRunningState(true);
+            clearOutput();
+            
+            try {
+                const requestBody = {
+                    code: code,
+                    timeout: parseInt(timeoutInput.value) || 30000
+                };
+
+                const response = await fetch('/api/run', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const jsonData = line.substring(6);
+                                if (jsonData.trim()) {
+                                    const data = JSON.parse(jsonData);
+                                    appendOutput(data);
+                                }
+                            } catch (e) {
+                                console.error('JSON解析错误:', e);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                appendOutput({
+                    type: 'Error',
+                    error: `请求错误: ${error.message}`
+                });
+            } finally {
+                setRunningState(false);
+            }
+        });
+
+        // 清空输出
+        clearBtn.addEventListener('click', () => {
+            clearOutput();
+        });
+
+        // 设置运行状态
+        function setRunningState(running) {
+            isRunning = running;
+            runBtn.disabled = running;
+            
+            if (running) {
+                runBtnText.textContent = '🔄 执行中...';
+                runBtnSpinner.classList.remove('d-none');
+            } else {
+                runBtnText.textContent = '▶️ 运行代码';
+                runBtnSpinner.classList.add('d-none');
+            }
+        }
+
+        // 清空输出
+        function clearOutput() {
+            output.innerHTML = '<div class="text-muted">准备执行...</div>';
+        }
+
+        // 添加输出
+        function appendOutput(data) {
+            // 首次输出时清空默认消息
+            if (output.children.length === 1 && output.children[0].classList.contains('text-muted')) {
+                output.innerHTML = '';
+            }
+
+            const div = document.createElement('div');
+            div.className = 'output-line';
+
+            switch (data.kind) {
+                case 'stdout':
+                    div.className += ' output-stdout';
+                    div.innerHTML = `<strong>[输出]</strong> ${escapeHtml(data.stdOutput)}`;
+                    break;
+                
+                case 'stderr':
+                    div.className += ' output-stderr';
+                    div.innerHTML = `<strong>[错误]</strong> ${escapeHtml(data.stdError)}`;
+                    break;
+                
+                case 'result':
+                    div.className += ' output-result';
+                    div.innerHTML = `<strong>[结果]</strong> ${escapeHtml(JSON.stringify(data.result))}`;
+                    break;
+                
+                case 'error':
+                    div.className += ' output-error';
+                    div.innerHTML = `<strong>[运行时错误]</strong><br><pre>${escapeHtml(data.error)}</pre>`;
+                    break;
+                
+                case 'compilerError':
+                    div.className += ' output-compiler-error';
+                    div.innerHTML = `<strong>[编译错误]</strong><br><pre>${escapeHtml(data.compilerError)}</pre>`;
+                    break;
+                
+                case 'end':
+                    div.className += ' output-result';
+                    const elapsed = data.elapsed || 0;
+                    div.innerHTML = `<strong>[执行完成]</strong> 耗时: ${elapsed}ms`;
+                    
+                    // 显示最终的stdout/stderr汇总
+                    if (data.stdOutput) {
+                        const stdOutDiv = document.createElement('div');
+                        stdOutDiv.className = 'output-line output-stdout mt-2';
+                        stdOutDiv.innerHTML = `<strong>[完整输出]</strong><br><pre>${escapeHtml(data.stdOutput)}</pre>`;
+                        output.appendChild(stdOutDiv);
+                    }
+                    
+                    if (data.stdError) {
+                        const stdErrDiv = document.createElement('div');
+                        stdErrDiv.className = 'output-line output-stderr mt-2';
+                        stdErrDiv.innerHTML = `<strong>[完整错误]</strong><br><pre>${escapeHtml(data.stdError)}</pre>`;
+                        output.appendChild(stdErrDiv);
+                    }
+                    break;
+                
+                default:
+                    div.innerHTML = `<strong>[未知类型]</strong> ${escapeHtml(JSON.stringify(data))}`;
+            }
+
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 代码编辑器增强：Tab键支持
+        codeEditor.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = codeEditor.selectionStart;
+                const end = codeEditor.selectionEnd;
+                codeEditor.value = codeEditor.value.substring(0, start) + '    ' + codeEditor.value.substring(end);
+                codeEditor.selectionStart = codeEditor.selectionEnd = start + 4;
+            }
+        });
+
+        // Enter键快捷运行
+        codeEditor.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                runBtn.click();
+            }
+        });
+    </script>
+</body>
+</html>

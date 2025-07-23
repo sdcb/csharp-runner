@@ -9,6 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "root", "root", "{9FA3D6BD-1
 	ProjectSection(SolutionItems) = preProject
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
+		docker-compose.yml = docker-compose.yml
 		LICENSE.txt = LICENSE.txt
 		README.md = README.md
 	EndProjectSection

@@ -1,7 +1,7 @@
 @Sdcb.CSharpRunner.Host_HostAddress = http://localhost:5050
 
 ### Run Code
-POST {{Sdcb.CSharpRunner.Host_HostAddress}}/api/runcode
+POST {{Sdcb.CSharpRunner.Host_HostAddress}}/api/run
 Content-Type: application/json
 {
   "code": "await Task.Delay(100);return 3+100;",

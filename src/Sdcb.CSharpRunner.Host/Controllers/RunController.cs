@@ -5,10 +5,10 @@ using System.Text.Json;
 namespace Sdcb.CSharpRunner.Host.Controllers;
 
 [Route("api/[controller]")]
-public class RunCodeController(IHttpClientFactory http) : ControllerBase
+public class RunController(IHttpClientFactory http) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> RunCode([FromBody] RunCodeRequest request, [FromServices] RoundRobinPool<Worker> db, CancellationToken cancellationToken)
+    public async Task<IActionResult> Run([FromBody] RunCodeRequest request, [FromServices] RoundRobinPool<Worker> db, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
         {
