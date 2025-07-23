@@ -31,7 +31,10 @@ internal class Program
         });
 
         await app.StartAsync();
-        await Handlers.Warmup();
+        if (settings.WarmUp)
+        {
+            await Handlers.Warmup();
+        }
         await app.WaitForShutdownAsync();
     }
 }

@@ -10,11 +10,14 @@ public record AppSettings
 
     public string? ExposedUrl { get; init; }
 
-    public static AppSettings Load(IConfiguration config) => new AppSettings
+    public bool WarmUp { get; init; }
+
+    public static AppSettings Load(IConfiguration config) => new()
     {
         MaxRuns = config.GetValue("MaxRuns", 0),
         Register = config.GetValue("Register", false),
         RegisterHostUrl = config.GetValue("RegisterHostUrl", string.Empty)!,
-        ExposedUrl = config.GetValue<string?>("ExposedUrl")
+        ExposedUrl = config.GetValue<string?>("ExposedUrl"),
+        WarmUp = config.GetValue("WarmUp", false)
     };
 }

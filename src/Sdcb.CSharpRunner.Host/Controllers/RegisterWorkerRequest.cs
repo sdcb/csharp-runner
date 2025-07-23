@@ -1,11 +1,11 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Sdcb.CSharpRunner.Host;
+namespace Sdcb.CSharpRunner.Host.Controllers;
 
 public record RegisterWorkerRequest
 {
     [JsonPropertyName("workerUrl")]
-    public required string WorkerUrl { get; init; }
+    public required Uri WorkerUrl { get; init; }
 
     [JsonPropertyName("maxRuns")]
     public required int MaxRuns { get; init; }
@@ -17,15 +17,28 @@ public record RegisterWorkerRequest
             return "MaxRuns must be greater than 0.";
         }
 
-        using HttpClient client = http.CreateClient();
-        client.Timeout = TimeSpan.FromSeconds(5);
-        HttpResponseMessage response = await client.GetAsync(WorkerUrl);
+        using HttpResponseMessage response = await WarmUp(http);
         if (!response.IsSuccessStatusCode)
         {
-            return $"Failed to reach worker at {WorkerUrl}. Status code: {response.StatusCode}";
+            return $"Failed to reach worker at {WorkerUrl}. Status code: {response.StatusCode}, Response: {await response.Content.ReadAsStringAsync()}";
         }
 
         return null;
+    }
+
+    private async Task<HttpResponseMessage> WarmUp(IHttpClientFactory http)
+    {
+        RunCodeRequest request = new("Console.WriteLine(\"Hello World!\");", IsWarmUp: true);
+        using HttpClient client = http.CreateClient();
+        client.BaseAddress = WorkerUrl;
+        client.Timeout = TimeSpan.FromMilliseconds(request.Timeout * 2);
+        using HttpRequestMessage req = new(HttpMethod.Post, "/run")
+        {
+            Content = JsonContent.Create(request, AppJsonContext.Default.RunCodeRequest),
+        };
+        HttpResponseMessage resp = await client.SendAsync(req);
+        string content = await resp.Content.ReadAsStringAsync();
+        return resp;
     }
 
     public Worker CreateWorker()

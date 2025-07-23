@@ -2,8 +2,11 @@
 using Microsoft.CodeAnalysis.Scripting;
 using System.Data;
 using System.Diagnostics;
+using System.Numerics;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading.Channels;
+using System.Xml.Linq;
 
 namespace Sdcb.CSharpRunner.Worker;
 
@@ -22,32 +25,43 @@ public static class Handlers
         return Results.Content(html, "text/html; charset=utf-8");
     }
 
-    private static SemaphoreSlim evalLock = new(1, 1);
-    private static ScriptOptions scriptOpt { get; } = ScriptOptions.Default
-        .AddReferences(typeof(object).Assembly)
-        .AddReferences(typeof(Enumerable).Assembly)
-        .AddReferences(typeof(DataTable).Assembly)
-        .AddReferences(typeof(Console).Assembly)
-        .AddReferences(typeof(Thread).Assembly)
+    private static readonly SemaphoreSlim _evalLock = new(1, 1);
+    private static readonly ScriptOptions _scriptOpt = ScriptOptions.Default
+        .AddReferences(
+            typeof(object).Assembly,
+            typeof(Enumerable).Assembly,
+            typeof(Console).Assembly,
+            typeof(Thread).Assembly,
+            typeof(XDocument).Assembly,
+            typeof(Task).Assembly,
+            typeof(ValueTask).Assembly,
+            typeof(HttpClient).Assembly,
+            typeof(JsonSerializer).Assembly,
+            typeof(SHA256).Assembly,
+            typeof(BigInteger).Assembly)
         .AddImports(
             "System",
             "System.Collections",
             "System.Collections.Generic",
-            "System.Data",
             "System.Diagnostics",
             "System.IO",
             "System.Linq",
-            "System.Linq.Expressions",
             "System.Reflection",
             "System.Text",
             "System.Text.RegularExpressions",
             "System.Threading",
-            "System.Transactions",
             "System.Xml",
             "System.Xml.Linq",
-            "System.Xml.XPath");
+            "System.Xml.XPath",
+            "System.Threading.Tasks",
+            "System.Collections.Concurrent",
+            "System.Net",
+            "System.Net.Http",
+            "System.Text.Json",
+            "System.Security",
+            "System.Security.Cryptography",
+            "System.Numerics");
     private static int runCount = 0;
-
 
     public static async Task Run(HttpContext ctx, int maxRuns, IHostApplicationLifetime life)
     {
@@ -62,7 +76,7 @@ public static class Handlers
         ctx.Response.Headers.CacheControl = "no-cache";
 
         // 并发互斥
-        await evalLock.WaitAsync(ctx.RequestAborted);
+        await _evalLock.WaitAsync(ctx.RequestAborted);
         Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Acquired lock for evaluation.");
         try
         {
@@ -98,7 +112,7 @@ public static class Handlers
             {
                 oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Before executing code...");
                 result = await CSharpScript
-                    .EvaluateAsync<object?>(request.Code, scriptOpt)
+                    .EvaluateAsync<object?>(request.Code, _scriptOpt)
                     .WaitAsync(TimeSpan.FromMilliseconds(request.Timeout), ctx.RequestAborted);
                 oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Code executed successfully.");
                 if (result != null)
@@ -139,7 +153,7 @@ public static class Handlers
 
             await writerTask;           // 等推流结束
 
-            if (maxRuns != 0)
+            if (!request.IsWarmUp && maxRuns != 0)
             {
                 if (Interlocked.Increment(ref runCount) >= maxRuns)
                 {
@@ -154,7 +168,7 @@ public static class Handlers
         }
         finally
         {
-            evalLock.Release();
+            _evalLock.Release();
         }
     }
 

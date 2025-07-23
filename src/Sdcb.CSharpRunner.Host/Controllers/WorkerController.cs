@@ -6,23 +6,23 @@ namespace Sdcb.CSharpRunner.Host.Controllers;
 public class WorkerController(RoundRobinPool<Worker> db, IHttpClientFactory http) : ControllerBase
 {
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterWorkerRequest worker)
+    public async Task<IActionResult> Register([FromBody] RegisterWorkerRequest worker, [FromServices] ILogger<WorkerController> logger)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        Console.WriteLine($"Registering worker: {worker.WorkerUrl}, MaxRuns: {worker.MaxRuns}");
+        logger.LogInformation("Registering worker: {WorkerUrl}, MaxRuns: {MaxRuns}", worker.WorkerUrl, worker.MaxRuns);
         string? errorMessage = await worker.Validate(http);
         if (errorMessage != null)
         {
-            Console.WriteLine(errorMessage);
+            logger.LogError(errorMessage);
             return BadRequest(errorMessage);
         }
 
         db.Add(worker.CreateWorker());
-        Console.WriteLine("Worker registration successful.");
+        logger.LogInformation("Worker registration successful.");
         return Ok(new { message = "Worker registered successfully." });
     }
 }
