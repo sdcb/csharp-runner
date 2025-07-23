@@ -25,6 +25,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sdcb.CSharpRunner.Host", "src\Sdcb.CSharpRunner.Host\Sdcb.CSharpRunner.Host.csproj", "{B3F8C362-DFEB-4E8D-AD51-4F1B0E81E6B0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sdcb.CSharpRunner.Shared", "src\Sdcb.CSharpRunner.Shared\Sdcb.CSharpRunner.Shared.csproj", "{949D3F41-EE49-4205-B125-C07C442C73EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{B3F8C362-DFEB-4E8D-AD51-4F1B0E81E6B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B3F8C362-DFEB-4E8D-AD51-4F1B0E81E6B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B3F8C362-DFEB-4E8D-AD51-4F1B0E81E6B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{949D3F41-EE49-4205-B125-C07C442C73EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{949D3F41-EE49-4205-B125-C07C442C73EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{949D3F41-EE49-4205-B125-C07C442C73EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{949D3F41-EE49-4205-B125-C07C442C73EA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -47,6 +53,7 @@ Global
 		{02A4524D-770E-F12E-E96A-BE63E08C3F2E} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{B209A00F-8C47-423D-9E80-3B65EDD585BE} = {69F1826E-0B15-4845-9EA8-CAF7028A893E}
 		{B3F8C362-DFEB-4E8D-AD51-4F1B0E81E6B0} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{949D3F41-EE49-4205-B125-C07C442C73EA} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {CEC49B93-B2E1-4B64-9F0C-92093941253A}

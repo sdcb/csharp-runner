@@ -1,3 +1,4 @@
+using Sdcb.CSharpRunner.Host.Mcp.Details;
 
 namespace Sdcb.CSharpRunner.Host;
 
@@ -15,6 +16,7 @@ public class Program
         builder.Services.AddSwaggerGen();
         builder.Services.AddSingleton<RoundRobinPool<Worker>>();
         builder.Services.AddHttpClient();
+        builder.Services.AddTransient<Mcp.Tools>();
 
         WebApplication app = builder.Build();
 
@@ -27,7 +29,7 @@ public class Program
 
         app.UseAuthorization();
 
-
+        app.MapMcpEndpoint<Mcp.Tools>("/mcp");
         app.MapControllers();
 
         app.Run();

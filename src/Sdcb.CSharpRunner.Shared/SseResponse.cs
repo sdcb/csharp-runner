@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Sdcb.CSharpRunner.Worker;
+namespace Sdcb.CSharpRunner.Shared;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "kind")]
 [JsonDerivedType(typeof(StdoutSseResponse), "stdout")]
@@ -50,19 +50,19 @@ public record ErrorSseResponse : SseResponse
 public record EndSseResponse : SseResponse
 {
     [JsonPropertyName("stdOutput"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public required string? StdOutput { get; init; }
+    public string? StdOutput { get; init; }
 
     [JsonPropertyName("stdError"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public required string? StdError { get; init; }
+    public string? StdError { get; init; }
 
     [JsonPropertyName("result"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public required object? Result { get; init; }
+    public object? Result { get; init; }
 
     [JsonPropertyName("compilerError"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public required string? CompilerError { get; init; }
+    public string? CompilerError { get; init; }
 
     [JsonPropertyName("error"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public required string? Error { get; init; }
+    public string? Error { get; init; }
 
     [JsonPropertyName("elapsed")]
     public required long Elapsed { get; init; }

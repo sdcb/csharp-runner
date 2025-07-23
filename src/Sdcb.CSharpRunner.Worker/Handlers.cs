@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using Sdcb.CSharpRunner.Shared;
 using System.Data;
 using System.Diagnostics;
 using System.Numerics;

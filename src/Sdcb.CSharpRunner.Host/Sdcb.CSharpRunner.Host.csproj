@@ -9,6 +9,11 @@
 
   <ItemGroup>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.3.2" />
+    <PackageReference Include="System.Net.ServerSentEvents" Version="9.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Sdcb.CSharpRunner.Shared\Sdcb.CSharpRunner.Shared.csproj" />
   </ItemGroup>
 
 </Project>

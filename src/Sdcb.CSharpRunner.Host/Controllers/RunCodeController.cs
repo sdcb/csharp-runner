@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Sdcb.CSharpRunner.Shared;
 
 namespace Sdcb.CSharpRunner.Host.Controllers;
 
@@ -7,35 +7,36 @@ namespace Sdcb.CSharpRunner.Host.Controllers;
 public class RunCodeController(IHttpClientFactory http) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> RunCode([FromBody] RunCodeRequest request, [FromServices] RoundRobinPool<Worker> db)
+    public async Task<IActionResult> RunCode([FromBody] RunCodeRequest request, [FromServices] RoundRobinPool<Worker> db, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        using RunLease<Worker> worker = await db.AcquireLeaseAsync();
-        using HttpResponseMessage resp = await worker.Value.Run(http, request);
-        if (!resp.IsSuccessStatusCode)
+        using RunLease<Worker> worker = await db.AcquireLeaseAsync(cancellationToken);
+        try
         {
-            return StatusCode((int)resp.StatusCode, await resp.Content.ReadAsStringAsync());
+            bool started = false;
+            await foreach (Memory<byte> buffer in worker.Value.RunAsMemory(http, request, cancellationToken))
+            {
+                if (!started)
+                {
+                    Response.Headers.ContentType = "text/event-stream; charset=utf-8";
+                    Response.Headers.CacheControl = "no-cache";
+                    started = true;
+                }
+
+                await Response.Body.WriteAsync(buffer, cancellationToken);
+                await Response.Body.FlushAsync(cancellationToken);
+            }
+            await Response.CompleteAsync();
+        }
+        catch (InvalidOperationException e)
+        {
+            return StatusCode(e.HResult, e.Message);
         }
 
-        Response.Headers.ContentType = "text/event-stream; charset=utf-8";
-        Response.Headers.CacheControl = "no-cache";
-        var feature = HttpContext.Features.Get<IHttpResponseBodyFeature>();
-        await using Stream stream = await resp.Content.ReadAsStreamAsync();
-        byte[] buffer = new byte[80 * 1024];
-        while (true)
-        {
-            int read = await stream.ReadAsync(buffer, HttpContext.RequestAborted);
-            if (read == 0) break;
-
-            await Response.Body.WriteAsync(buffer.AsMemory(0, read), HttpContext.RequestAborted);
-            await Response.Body.FlushAsync(HttpContext.RequestAborted);
-        }
-
-        await Response.CompleteAsync();
         return Empty;
     }
 }

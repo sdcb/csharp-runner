@@ -11,4 +11,8 @@
     <PackageReference Include="Microsoft.CodeAnalysis.Scripting" Version="4.14.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Sdcb.CSharpRunner.Shared\Sdcb.CSharpRunner.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Sdcb.CSharpRunner.Worker;
+namespace Sdcb.CSharpRunner.Shared;
 
 public record RunCodeRequest(
     [property: JsonPropertyName("code")] string Code,

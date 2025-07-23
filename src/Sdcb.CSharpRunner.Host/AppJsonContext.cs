@@ -1,9 +1,13 @@
-﻿using System.Text.Json.Serialization;
+﻿using Sdcb.CSharpRunner.Shared;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Sdcb.CSharpRunner.Host;
 
 [JsonSourceGenerationOptions]
 [JsonSerializable(typeof(RunCodeRequest))]
+[JsonSerializable(typeof(SseResponse))]
+[JsonSerializable(typeof(JsonElement))]
 public partial class AppJsonContext : JsonSerializerContext
 {
 }
