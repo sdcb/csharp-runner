@@ -1,78 +1,62 @@
-# 🚀 C# Runner
+# 🚀 C\# Runner
 
 [![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4.svg)](https://dotnet.microsoft.com/download/dotnet/9.0)
 [![Docker-Host](https://img.shields.io/docker/v/sdcb/csharp-runner-host?sort=semver&logo=docker)](https://hub.docker.com/r/sdcb/csharp-runner-host)
 [![Docker-Worker](https://img.shields.io/docker/v/sdcb/csharp-runner-worker?sort=semver&logo=docker)](https://hub.docker.com/r/sdcb/csharp-runner-worker)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-C# Runner 是一个高性能、安全的在线 C# 代码执行平台，支持 HTTP 和 MCP（Model Context Protocol）双协议接口。基于 Docker Compose 架构，通过 Host-Worker 分离设计确保代码执行的安全性和性能。
+**English** | [中文](./README_CN.md)
 
-## ✨ 特性
+C\# Runner is a high-performance and secure platform for executing C\# code online. It's built on a Host-Worker architecture that isolates code execution in Docker containers and supports dual protocols: HTTP and MCP (Model Context Protocol).
 
-- 🔒 **安全隔离** - 未受信任的 C# 代码在独立的 Worker 容器中执行
-- ⚡ **高性能** - Worker 预热机制，首次执行即可获得最佳性能
-- 🌐 **双协议支持** - 同时支持 HTTP REST API 和 MCP 协议
-- 📊 **实时流式输出** - 基于 Server-Sent Events (SSE) 的实时代码执行反馈
-- 🎯 **负载均衡** - 采用 Round-Robin 算法在多个 Worker 之间分发任务
-- 🐳 **容器化部署** - 完整的 Docker Compose 解决方案
-- 🎨 **Web 界面** - 美观易用的在线代码编辑器和执行环境
+## ✨ Core Features
 
-## 🏗️ 系统架构
+  - **🔒 Secure & Reliable**
 
-```
-├── Host
-│   ├── Http
-│   │   ├── Api
-│   │   └── Pages
-│   ├── Mcp
-│   ├── Services
-│   └── Program.cs
-└── Worker
-    ├── Handlers
-    ├── HostedServices
-    ├── HttpClient
-    ├── Mcp
-    └── Program.cs
-```
+      - **Container Isolation**: Untrusted code runs in isolated Docker Worker containers, ensuring host safety.
+      - **Resource Limits**: Supports CPU, memory, and execution timeout limits to prevent resource abuse.
+      - **Network Isolation**: Worker containers have restricted network access.
 
-- **Host**: 处理外部请求，进行负载均衡，管理 Worker 状态。
-- **Worker**: 实际执行 C# 代码的沙箱，返回执行结果。
+    <!-- end list -->
 
-## 🚀 快速开始
+      * **Worker Recycling**: Automatically recycles a Worker instance after a configured number of runs to maintain a clean environment.
 
-### 前置要求
+  - **⚡ High-Performance**
 
-- Docker 和 Docker Compose
-- .NET 9 SDK (开发环境)
+      - **Worker Warm-up**: Pre-compiles code on startup to ensure optimal performance from the very first run.
+      - **Load Balancing**: Distributes tasks among multiple Workers using a Round-Robin algorithm.
+      - **Connection Pooling**: Reuses HttpClient instances to reduce network overhead.
 
-### 使用 Docker Compose 部署
+  - **🌐 Rich Functionality**
+
+      - **Dual Protocol Support**: Offers both an HTTP REST API and an MCP interface.
+      - **Streaming Output**: Streams code output, results, and errors in real-time using Server-Sent Events (SSE).
+      - **User-friendly Web UI**: Features a clean code editor with syntax highlighting and `Ctrl+Enter` shortcut for execution.
+      - **Out-of-the-Box**: Provides a complete Docker Compose solution for one-click deployment.
+
+## 🚀 Quick Start
+
+**Prerequisites:**
+
+  * Docker and Docker Compose
+
+**One-Click Deploy with Docker Compose:**
 
 ```bash
-# 直接下载docker-compose
+# Download the docker-compose.yml file
 curl -L https://raw.githubusercontent.com/sdcb/csharp-runner/refs/heads/master/docker-compose.yml -o docker-compose.yml
-# 启动服务
+
+# Start the services in detached mode
 docker compose up -d
 ```
 
-然后就可以打开浏览器访问 [http://localhost:5050](http://localhost:5050)
+Once deployed, open your browser to `http://localhost:5050` to access the web UI.
 
-### 开发环境运行
+## 🔧 Configuration
 
-1. 启动 Host 服务
-```bash
-cd src/Sdcb.CSharpRunner.Host
-dotnet run
-```
+### Docker Compose
 
-2. 启动 Worker 服务
-```bash
-cd src/Sdcb.CSharpRunner.Worker
-dotnet run
-```
-
-## 🔧 配置说明
-
-### Docker Compose 配置
+The `docker-compose.yml` file defines the Host and Worker services. You can scale the number of Workers by changing `deploy.replicas` and configure Worker behavior via `environment` variables.
 
 ```yml
 services:
@@ -80,48 +64,54 @@ services:
     image: sdcb/csharp-runner-host:latest
     container_name: csharp-runner-host
     ports:
-      - "5050:8080"  # Web UI 和 API 端口
+      - "5050:8080"  # Format: <host-port>:<container-port>
     restart: unless-stopped
 
   worker:
     image: sdcb/csharp-runner-worker:latest
     environment:
-      - MaxRuns=1              # 最大运行次数 (0=无限制)
-      - Register=true          # 自动注册到 Host
-      - RegisterHostUrl=http://host:8080  # Host 服务地址
+      - MaxRuns=100           # Max runs per worker (0=unlimited)
+      - Register=true         # Auto-register to the Host
+      - RegisterHostUrl=http://host:8080
+      - WarmUp=true           # Enable warm-up on start
     restart: unless-stopped
     depends_on:
       - host
     deploy:
-      replicas: 5              # Worker 副本数量
+      replicas: 5             # Number of worker instances
 ```
 
-### Worker 配置参数
+### Worker Environment Variables
 
-| 参数 | 说明 | 默认值 |
-|------|------|--------|
-| `MaxRuns` | Worker 最大执行次数，0 表示无限制 | `0` |
-| `Register` | 是否自动注册到 Host 服务 | `false` |
-| `RegisterHostUrl` | Host 服务的注册地址 | `http://host` |
-| `ExposedUrl` | Worker 对外暴露的 URL (可选) | `null` |
-| `WarmUp` | Worker启动时是否执行预热 | `false` |
-| `MaxTimeout` | 最大执行超时时间 (毫秒) | `30000` |
+| Parameter         | Description                                                        | Default         |
+| ----------------- | ------------------------------------------------------------------ | --------------- |
+| `MaxRuns`         | The maximum number of times a Worker can execute code (0=unlimited). | `0`             |
+| `Register`        | Whether to auto-register to the Host service.                      | `false`         |
+| `RegisterHostUrl` | The registration URL of the Host service.                          | `http://host`   |
+| `ExposedUrl`      | The externally exposed URL of the Worker (optional).               | `null`          |
+| `WarmUp`          | Whether to perform a warm-up on startup.                           | `false`         |
+| `MaxTimeout`      | Maximum execution timeout in milliseconds.                         | `30000`         |
 
-## 📡 API 使用
+## 📡 API Usage
 
-### HTTP API
+### HTTP API (SSE)
 
-#### 执行 C# 代码
+Execute code by sending a POST request to `/api/run`. The response is streamed as Server-Sent Events (SSE).
+
+**Request**
 
 ```http
 POST /api/run
+Content-Type: application/json
+
 {
   "code": "Console.WriteLine(\"Hello, World!\"); return 42;",
   "timeout": 30000
 }
 ```
 
-**响应** (Server-Sent Events)
+**Response Stream**
+
 ```http
 data: {"kind":"stdout","stdOutput":"Hello, World!"}
 
@@ -130,14 +120,12 @@ data: {"kind":"result","result":42}
 data: {"kind":"end","elapsed":150,"stdOutput":"Hello, World!","stdError":""}
 ```
 
-### MCP 协议
+### MCP Protocol
 
-MCP 端点：`/mcp`
+The MCP endpoint is at `/mcp` and supports the `run_code` tool.
 
-支持的工具：
-- `run_code` - 在沙箱环境中执行 C# 代码
+**Request Example**
 
-#### 示例请求
 ```json
 {
   "jsonrpc": "2.0",
@@ -152,93 +140,62 @@ MCP 端点：`/mcp`
 }
 ```
 
-## 🎨 Web 界面特性
+## 🏗️ Architecture & Development Guide
 
-- 🖥️ **代码编辑器** - 支持语法高亮、Tab 缩进
-- ⚡ **快捷执行** - Ctrl+Enter 快速运行代码
-- 📊 **实时输出** - 显示标准输出、错误输出和执行结果
-- ⏱️ **超时设置** - 可配置代码执行超时时间
-- 🎯 **状态显示** - 实时显示 Worker 数量和执行状态
+### System Architecture
 
-## 🔒 安全特性
+  - **Host**: Provides the public API and web UI. It receives requests, manages a pool of Workers, and handles load balancing.
+  - **Worker**: Runs in an isolated sandbox environment, responsible for executing the C\# code and returning the result.
 
-- **容器隔离** - 每个 Worker 运行在独立的 Docker 容器中
-- **资源限制** - 支持 CPU 和内存使用限制
-- **执行超时** - 防止无限循环和长时间运行
-- **网络隔离** - Worker 容器具有受限的网络访问权限
-- **运行次数限制** - 可配置 Worker 的最大执行次数
-
-## 🧩 支持的 C# 功能
-
-内置引用的程序集和命名空间：
-```csharp
-// 支持的命名空间
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Net.Http;
-using System.Text.Json;
-using System.Security.Cryptography;
-using System.Numerics;
-// ... 更多
-```
-
-## 📊 性能优化
-
-1. **Worker 预热** - 启动时预先编译和执行示例代码
-2. **连接池** - 复用 HttpClient 连接
-3. **Round-Robin 调度** - 均匀分发请求到多个 Worker
-4. **SSE 流式传输** - 实时传输执行结果，提升用户体验
-
-## 🛠️ 开发指南
-
-### 项目结构
+### Project Structure
 
 ```
 src/
-├── Sdcb.CSharpRunner.Host/     # Host 服务
-│   ├── Controllers/            # API 控制器
-│   ├── Mcp/                   # MCP 协议实现
-│   ├── Pages/                 # Razor Pages
-│   └── Program.cs
-├── Sdcb.CSharpRunner.Worker/   # Worker 服务
-│   ├── Handlers.cs            # 代码执行处理器
-│   └── Program.cs
-└── Sdcb.CSharpRunner.Shared/   # 共享类库
-    └── Models/                # 数据传输对象
+├── Sdcb.CSharpRunner.Host/     # Host Service (ASP.NET Core)
+├── Sdcb.CSharpRunner.Worker/   # Worker Service (Console App)
+└── Sdcb.CSharpRunner.Shared/   # Shared Library (DTOs, etc.)
 ```
 
-### 构建镜像
-# 构建 Host 镜像
+### Local Development
+
+1.  **Run the Host Service**
+
+    ```bash
+    cd src/Sdcb.CSharpRunner.Host
+    dotnet run
+    ```
+
+2.  **Run the Worker Service**
+
+    ```bash
+    cd src/Sdcb.CSharpRunner.Worker
+    dotnet run
+    ```
+
+### Building Custom Images
+
 ```bash
+# Build the Host image
 dotnet publish ./src/Sdcb.CSharpRunner.Host/Sdcb.CSharpRunner.Host.csproj -c Release /t:PublishContainer /p:ContainerRepository=csharp-runner-host
-```
 
-# 构建 Worker 镜像
-```bash
+# Build the Worker image
 dotnet publish ./src/Sdcb.CSharpRunner.Worker/Sdcb.CSharpRunner.Worker.csproj -c Release /t:PublishContainer /p:ContainerRepository=csharp-runner-worker
 ```
 
-## 🤝 贡献
+## 🤝 Contributing
 
-欢迎提交 Issue 和 Pull Request！
+Contributions via Issues and Pull Requests are welcome\! Please follow these steps:
 
-1. Fork 项目
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建 Pull Request
+1.  Fork the repository
+2.  Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4.  Push to the branch (`git push origin feature/AmazingFeature`)
+5.  Open a Pull Request
 
-## 📄 许可证
+## 📄 License
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+This project is licensed under the MIT License - see the [LICENSE](https://www.google.com/search?q=LICENSE) file for details.
 
-## 🙋‍♂️ 支持
+-----
 
-- 🐛 Bug 报告：[GitHub Issues](https://github.com/sdcb/csharp-runner/issues)
-
----
-
-⭐ 如果这个项目对你有帮助，请给它一个 Star！
+⭐ If you find this project helpful, please give it a star\!
