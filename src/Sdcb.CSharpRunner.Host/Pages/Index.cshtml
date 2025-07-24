@@ -6,7 +6,7 @@
 }
 
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -160,16 +160,16 @@
                     <div class="row mb-4">
                         <div class="col-12">
                             <label for="codeEditor" class="form-label fw-bold mb-2">
-                                💻 编写你的 C# 代码
+                                💻 Write your C# code
                             </label>
-                            <textarea id="codeEditor" class="form-control code-editor" rows="12" placeholder="在这里输入你的 C# 代码...">Console.WriteLine("Hello, C# Runner!");
+                            <textarea id="codeEditor" class="form-control code-editor" rows="12" placeholder="Enter your C# code here...">Console.WriteLine("Hello, C# Runner!");
 Console.WriteLine($"Current time: {DateTime.Now}");
 
-// 计算示例
+// Calculation example
 int result = 3 + 4;
 Console.WriteLine($"3 + 4 = {result}");
 
-// 返回结果
+// Return result
 result</textarea>
                         </div>
                     </div>
@@ -178,16 +178,16 @@ result</textarea>
                     <div class="row mb-4">
                         <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
                             <div>
-                                <label for="timeoutInput" class="form-label me-2">超时时间 (ms):</label>
+                                <label for="timeoutInput" class="form-label me-2">Timeout (ms):</label>
                                 <input type="number" id="timeoutInput" class="form-control form-control-sm d-inline-block" style="width: 120px;" value="30000" min="1000" max="60000">
                             </div>
                             <div>
                                 <button id="runBtn" class="run-btn">
-                                    <span id="runBtnText">▶️ 运行代码</span>
+                                    <span id="runBtnText">▶️ Run Code</span>
                                     <div id="runBtnSpinner" class="loading-spinner d-none"></div>
                                 </button>
                                 <button id="clearBtn" class="btn btn-outline-secondary ms-2">
-                                    🗑️ 清空输出
+                                    🗑️ Clear Output
                                 </button>
                             </div>
                         </div>
@@ -197,10 +197,10 @@ result</textarea>
                     <div class="row">
                         <div class="col-12">
                             <label class="form-label fw-bold mb-2">
-                                📤 执行结果
+                                📤 Output
                             </label>
                             <div id="output" class="output-container p-3">
-                                <div class="text-muted">点击"运行代码"开始执行...</div>
+                                <div class="text-muted">Click "Run Code" to start executing...</div>
                             </div>
                         </div>
                     </div>
@@ -208,7 +208,7 @@ result</textarea>
                     <!-- Footer -->
                     <div class="text-center mt-4 pt-3 border-top">
                         <small class="text-muted">
-                            了解更多信息，请访问 
+                            For more information, please visit 
                             <a href="https://github.com/sdcb/csharp-runner" target="_blank" class="text-decoration-none">
                                 🔗 https://github.com/sdcb/csharp-runner
                             </a>
@@ -231,13 +231,13 @@ result</textarea>
 
         let isRunning = false;
 
-        // 运行代码
+        // Run code
         runBtn.addEventListener('click', async () => {
             if (isRunning) return;
 
             const code = codeEditor.value.trim();
             if (!code) {
-                alert('请输入要执行的代码');
+                alert('Please enter code to execute');
                 return;
             }
 
@@ -282,7 +282,7 @@ result</textarea>
                                     appendOutput(data);
                                 }
                             } catch (e) {
-                                console.error('JSON解析错误:', e);
+                                console.error('JSON parse error:', e);
                             }
                         }
                     }
@@ -290,40 +290,40 @@ result</textarea>
             } catch (error) {
                 appendOutput({
                     type: 'Error',
-                    error: `请求错误: ${error.message}`
+                    error: `Request error: ${error.message}`
                 });
             } finally {
                 setRunningState(false);
             }
         });
 
-        // 清空输出
+        // Clear output
         clearBtn.addEventListener('click', () => {
             clearOutput();
         });
 
-        // 设置运行状态
+        // Set running state
         function setRunningState(running) {
             isRunning = running;
             runBtn.disabled = running;
             
             if (running) {
-                runBtnText.textContent = '🔄 执行中...';
+                runBtnText.textContent = '🔄 Running...';
                 runBtnSpinner.classList.remove('d-none');
             } else {
-                runBtnText.textContent = '▶️ 运行代码';
+                runBtnText.textContent = '▶️ Run Code';
                 runBtnSpinner.classList.add('d-none');
             }
         }
 
-        // 清空输出
+        // Clear output
         function clearOutput() {
-            output.innerHTML = '<div class="text-muted">准备执行...</div>';
+            output.innerHTML = '<div class="text-muted">Ready to execute...</div>';
         }
 
-        // 添加输出
+        // Append output
         function appendOutput(data) {
-            // 首次输出时清空默认消息
+            // Clear default message on first output
             if (output.children.length === 1 && output.children[0].classList.contains('text-muted')) {
                 output.innerHTML = '';
             }
@@ -334,66 +334,66 @@ result</textarea>
             switch (data.kind) {
                 case 'stdout':
                     div.className += ' output-stdout';
-                    div.innerHTML = `<strong>[输出]</strong> ${escapeHtml(data.stdOutput)}`;
+                    div.innerHTML = `<strong>[Output]</strong> ${escapeHtml(data.stdOutput)}`;
                     break;
                 
                 case 'stderr':
                     div.className += ' output-stderr';
-                    div.innerHTML = `<strong>[错误]</strong> ${escapeHtml(data.stdError)}`;
+                    div.innerHTML = `<strong>[Error]</strong> ${escapeHtml(data.stdError)}`;
                     break;
                 
                 case 'result':
                     div.className += ' output-result';
-                    div.innerHTML = `<strong>[结果]</strong> ${escapeHtml(JSON.stringify(data.result))}`;
+                    div.innerHTML = `<strong>[Result]</strong> ${escapeHtml(JSON.stringify(data.result))}`;
                     break;
                 
                 case 'error':
                     div.className += ' output-error';
-                    div.innerHTML = `<strong>[运行时错误]</strong><br><pre>${escapeHtml(data.error)}</pre>`;
+                    div.innerHTML = `<strong>[Runtime Error]</strong><br><pre>${escapeHtml(data.error)}</pre>`;
                     break;
                 
                 case 'compilerError':
                     div.className += ' output-compiler-error';
-                    div.innerHTML = `<strong>[编译错误]</strong><br><pre>${escapeHtml(data.compilerError)}</pre>`;
+                    div.innerHTML = `<strong>[Compiler Error]</strong><br><pre>${escapeHtml(data.compilerError)}</pre>`;
                     break;
                 
                 case 'end':
                     div.className += ' output-result';
                     const elapsed = data.elapsed || 0;
-                    div.innerHTML = `<strong>[执行完成]</strong> 耗时: ${elapsed}ms`;
+                    div.innerHTML = `<strong>[Execution Finished]</strong> Time elapsed: ${elapsed}ms`;
                     
-                    // 显示最终的stdout/stderr汇总
+                    // Show final stdout/stderr summary
                     if (data.stdOutput) {
                         const stdOutDiv = document.createElement('div');
                         stdOutDiv.className = 'output-line output-stdout mt-2';
-                        stdOutDiv.innerHTML = `<strong>[完整输出]</strong><br><pre>${escapeHtml(data.stdOutput)}</pre>`;
+                        stdOutDiv.innerHTML = `<strong>[Full Output]</strong><br><pre>${escapeHtml(data.stdOutput)}</pre>`;
                         output.appendChild(stdOutDiv);
                     }
                     
                     if (data.stdError) {
                         const stdErrDiv = document.createElement('div');
                         stdErrDiv.className = 'output-line output-stderr mt-2';
-                        stdErrDiv.innerHTML = `<strong>[完整错误]</strong><br><pre>${escapeHtml(data.stdError)}</pre>`;
+                        stdErrDiv.innerHTML = `<strong>[Full Error]</strong><br><pre>${escapeHtml(data.stdError)}</pre>`;
                         output.appendChild(stdErrDiv);
                     }
                     break;
                 
                 default:
-                    div.innerHTML = `<strong>[未知类型]</strong> ${escapeHtml(JSON.stringify(data))}`;
+                    div.innerHTML = `<strong>[Unknown Type]</strong> ${escapeHtml(JSON.stringify(data))}`;
             }
 
             output.appendChild(div);
             output.scrollTop = output.scrollHeight;
         }
 
-        // HTML转义
+        // HTML escape
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        // 代码编辑器增强：Tab键支持
+        // Code editor enhancement: Tab key support
         codeEditor.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') {
                 e.preventDefault();
@@ -404,7 +404,7 @@ result</textarea>
             }
         });
 
-        // Enter键快捷运行
+        // Ctrl+Enter to run
         codeEditor.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 'Enter') {
                 e.preventDefault();
