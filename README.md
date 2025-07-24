@@ -105,6 +105,7 @@ services:
 | `RegisterHostUrl` | Host 服务的注册地址 | `http://host` |
 | `ExposedUrl` | Worker 对外暴露的 URL (可选) | `null` |
 | `WarmUp` | Worker启动时是否执行预热 | `false` |
+| `MaxTimeout` | 最大执行超时时间 (毫秒) | `30000` |
 
 ## 📡 API 使用
 

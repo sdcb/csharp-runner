@@ -12,12 +12,15 @@ public record AppSettings
 
     public bool WarmUp { get; init; }
 
+    public int MaxTimeout { get; init; }
+
     public static AppSettings Load(IConfiguration config) => new()
     {
         MaxRuns = config.GetValue("MaxRuns", 0),
         Register = config.GetValue("Register", false),
         RegisterHostUrl = config.GetValue("RegisterHostUrl", string.Empty)!,
         ExposedUrl = config.GetValue<string?>("ExposedUrl"),
-        WarmUp = config.GetValue("WarmUp", false)
+        WarmUp = config.GetValue("WarmUp", false),
+        MaxTimeout = config.GetValue("MaxTimeout", 30000)
     };
 }

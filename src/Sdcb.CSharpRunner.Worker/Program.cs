@@ -20,7 +20,7 @@ internal class Program
         IHostApplicationLifetime life = app.Services.GetRequiredService<IHostApplicationLifetime>();
 
         app.MapGet("/", Handlers.GetHome);
-        app.MapPost("/run", ctx => Handlers.Run(ctx, settings.MaxRuns, life));
+        app.MapPost("/run", ctx => Handlers.Run(ctx, settings.MaxTimeout, settings.MaxRuns, life));
         life.ApplicationStarted.Register(async () =>
         {
             if (settings.Register)

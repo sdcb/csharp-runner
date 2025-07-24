@@ -1,7 +1,6 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Sdcb.CSharpRunner.Shared;
-using System.Data;
 using System.Diagnostics;
 using System.Numerics;
 using System.Security.Cryptography;
@@ -64,13 +63,12 @@ public static class Handlers
             "System.Numerics");
     private static int runCount = 0;
 
-    public static async Task Run(HttpContext ctx, int maxRuns, IHostApplicationLifetime life)
+    public static async Task Run(HttpContext ctx, int maxTimeout = 30_000, int maxRuns = 0, IHostApplicationLifetime? life = null)
     {
         Stopwatch sw = Stopwatch.StartNew();
         Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Received request");
         RunCodeRequest request = await JsonSerializer.DeserializeAsync(ctx.Request.Body, AppJsonContext.Default.RunCodeRequest)
             ?? throw new ArgumentException("Invalid request body", nameof(ctx));
-        Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Deserialized request");
 
         // SSE 头
         ctx.Response.Headers.ContentType = "text/event-stream; charset=utf-8";
@@ -78,7 +76,6 @@ public static class Handlers
 
         // 并发互斥
         await _evalLock.WaitAsync(ctx.RequestAborted);
-        Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Acquired lock for evaluation.");
         try
         {
             Channel<SseResponse> channel = Channel.CreateUnbounded<SseResponse>();
@@ -97,7 +94,6 @@ public static class Handlers
             // ① 推流协程
             Task writerTask = Task.Run(async () =>
             {
-                oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Start streaming...");
                 await foreach (SseResponse msg in channel.Reader.ReadAllAsync(default))
                 {
                     string json = JsonSerializer.Serialize(msg, AppJsonContext.FallbackOptions);
@@ -110,11 +106,9 @@ public static class Handlers
 
             try
             {
-                oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Before executing code...");
-                using CancellationTokenSource cts = new(request.Timeout);
+                using CancellationTokenSource cts = new(Math.Min(maxTimeout, request.Timeout));
                 result = await CSharpScript
                     .EvaluateAsync<object?>(request.Code, _scriptOpt, cancellationToken: cts.Token);
-                oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Code executed successfully.");
                 if (result != null)
                 {
                     channel.Writer.TryWrite(new ResultSseResponse { Result = result });
@@ -163,7 +157,7 @@ public static class Handlers
                 if (Interlocked.Increment(ref runCount) >= maxRuns)
                 {
                     Console.WriteLine($"Max runs reached: {maxRuns}");
-                    life.StopApplication();
+                    life?.StopApplication();
                 }
                 else
                 {
@@ -182,6 +176,6 @@ public static class Handlers
         HttpContext fakeHttpContext = new DefaultHttpContext();
         fakeHttpContext.Request.Body = new MemoryStream(JsonSerializer.SerializeToUtf8Bytes(
             new RunCodeRequest("Console.WriteLine(\"Ready\");"), AppJsonContext.Default.RunCodeRequest));
-        await Run(fakeHttpContext, 0, null!);
+        await Run(fakeHttpContext);
     }
 }
