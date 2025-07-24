@@ -64,21 +64,28 @@ services:
     image: sdcb/csharp-runner-host:latest
     container_name: csharp-runner-host
     ports:
-      - "5050:8080"  # Format: <host-port>:<container-port>
+      - "5050:8080"
     restart: unless-stopped
 
   worker:
     image: sdcb/csharp-runner-worker:latest
     environment:
-      - MaxRuns=100           # Max runs per worker (0=unlimited)
+      - MaxRuns=2           # Max runs per worker (0=unlimited)
       - Register=true         # Auto-register to the Host
       - RegisterHostUrl=http://host:8080
-      - WarmUp=true           # Enable warm-up on start
     restart: unless-stopped
     depends_on:
       - host
     deploy:
-      replicas: 5             # Number of worker instances
+      replicas: 3
+      resources:
+        limits:
+          cpus: 0.50
+          memory: 256M
+          pids: 8
+        reservations:
+          cpus: 0.25
+          memory: 128M
 ```
 
 ### Worker Environment Variables

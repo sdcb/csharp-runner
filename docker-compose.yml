@@ -9,11 +9,19 @@ services:
   worker:
     image: sdcb/csharp-runner-worker:latest
     environment:
-      - MaxRuns=1
-      - Register=true
+      - MaxRuns=2             # Max runs per worker (0=unlimited)
+      - Register=true         # Auto-register to the Host
       - RegisterHostUrl=http://host:8080
     restart: unless-stopped
     depends_on:
       - host
     deploy:
-      replicas: 5
+      replicas: 3
+      resources:
+        limits:
+          cpus: 0.50
+          memory: 256M
+          pids: 8
+        reservations:
+          cpus: 0.25
+          memory: 128M
