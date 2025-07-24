@@ -184,8 +184,15 @@ public static class McpEndpointExtensions
                 ParameterInfo p = methodParams[i];
                 if (p.ParameterType == typeof(IProgress<ProgressNotificationValue>))
                 {
-                    // 创建一个IProgress<T>的实现，它会将进度作为SSE消息发回客户端
-                    args[i] = new ProgressReporter(context.Response, toolCallParams.Meta!.ProgressToken);
+                    if (toolCallParams.Meta?.ProgressToken != null)
+                    {
+                        // 创建一个IProgress<T>的实现，它会将进度作为SSE消息发回客户端
+                        args[i] = new ProgressReporter(context.Response, toolCallParams.Meta.ProgressToken);
+                    }
+                    else
+                    {
+                        args[i] = new StubProgressReporter();
+                    }
                 }
                 else if (toolCallParams.Arguments.TryGetValue(p.Name!, out object? argValue) && argValue is JsonElement element)
                 {
@@ -263,6 +270,13 @@ public static class McpEndpointExtensions
             ProgressNotification notification = new("2.0", "notifications/progress", progressParams);
             // 警告: 在同步方法中调用异步代码，在真实生产环境中需要更优雅的处理
             WriteSseMessageAsync(response, notification).GetAwaiter().GetResult();
+        }
+    }
+
+    private class StubProgressReporter : IProgress<ProgressNotificationValue>
+    {
+        public void Report(ProgressNotificationValue value)
+        {
         }
     }
 }
