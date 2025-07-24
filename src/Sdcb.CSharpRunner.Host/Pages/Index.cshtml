@@ -354,7 +354,7 @@ result</textarea>
                 
                 case 'compilerError':
                     div.className += ' output-compiler-error';
-                    div.innerHTML = `<strong>[Compiler Error]</strong><br><pre>${escapeHtml(data.compilerError)}</pre>`;
+                    div.innerHTML = `<strong>[Compiler Error]</strong><br><pre>${escapeHtml(data.compilationError)}</pre>`;
                     break;
                 
                 case 'end':
