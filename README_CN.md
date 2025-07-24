@@ -61,21 +61,29 @@ services:
     image: sdcb/csharp-runner-host:latest
     container_name: csharp-runner-host
     ports:
-      - "5050:8080"  # 格式: <主机端口>:<容器端口>
+      - "5050:8080"
     restart: unless-stopped
 
   worker:
     image: sdcb/csharp-runner-worker:latest
     environment:
-      - MaxRuns=100           # 每个 Worker 最大运行次数 (0=无限制)
-      - Register=true         # 自动向 Host 注册
+      - MaxRuns=2           # Worker 最大执行次数 (0=无限制)
+      - Register=true       # 是否自动注册到 Host（独立部署时不需要）
       - RegisterHostUrl=http://host:8080
-      - WarmUp=true           # 启动时预热
+      - WarmUp=false        # 默认由host预热，独立部署时建议打开
     restart: unless-stopped
     depends_on:
       - host
     deploy:
-      replicas: 5             # 启动 5 个 Worker 实例
+      replicas: 3
+      resources:
+        limits:
+          cpus: 0.50
+          memory: 256M
+          pids: 8
+        reservations:
+          cpus: 0.25
+          memory: 128M
 ```
 
 ### Worker 环境变量

@@ -71,8 +71,9 @@ services:
     image: sdcb/csharp-runner-worker:latest
     environment:
       - MaxRuns=2           # Max runs per worker (0=unlimited)
-      - Register=true         # Auto-register to the Host
+      - Register=true       # Auto-register to the Host
       - RegisterHostUrl=http://host:8080
+      - WarmUp=false        # Enable warm-up (recommended for standalone deployment)
     restart: unless-stopped
     depends_on:
       - host
