@@ -29,7 +29,7 @@ jobs:
 
     - name: Build container
       run: |
-        dotnet publish ./src/Sdcb.CSharpRunner.Host/Sdcb.CSharpRunner.Host.csproj -c Release --os ${{ matrix.os }} --arch ${{ matrix.arch }} /t:PublishContainer /p:ContainerRepository=${{ env.DOCKER_ID }} ${{ needs.build-fe.outputs.msbuild_args }} ${{ matrix.args }}
+        dotnet publish ./src/Sdcb.CSharpRunner.Host/Sdcb.CSharpRunner.Host.csproj -c Release --os ${{ matrix.os }} --arch ${{ matrix.arch }} /t:PublishContainer /p:PublishReadyToRun=true /p:ContainerRepository=${{ env.DOCKER_ID }} ${{ needs.build-fe.outputs.msbuild_args }} ${{ matrix.args }}
 
     - name: Tag container with run number
       run: |
