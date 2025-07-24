@@ -151,7 +151,7 @@
                                 ✅ READY
                             </span>
                             <div class="worker-info">
-                                <strong>Workers:</strong> @db.Count
+                                <strong>Workers:</strong> <span id="workerCount">@db.Count</span>
                             </div>
                         </div>
                     </div>
@@ -411,6 +411,22 @@ result</textarea>
                 runBtn.click();
             }
         });
+
+        // Worker count polling
+        async function updateWorkerCount() {
+            try {
+                const resp = await fetch('/api/worker/count');
+                if (resp.ok) {
+                    const data = await resp.json();
+                    document.getElementById('workerCount').textContent = data;
+                } else {
+                    document.getElementById('workerCount').textContent = '-';
+                }
+            } catch {
+                document.getElementById('workerCount').textContent = '-';
+            }
+        }
+        setInterval(updateWorkerCount, 1500);
     </script>
 </body>
 </html>

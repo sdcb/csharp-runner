@@ -25,4 +25,10 @@ public class WorkerController(RoundRobinPool<Worker> db, IHttpClientFactory http
         logger.LogInformation("Worker registration successful.");
         return Ok(new { message = "Worker registered successfully." });
     }
+
+    [HttpGet("count")]
+    public int GetWorkerCount()
+    {
+        return db.Count;
+    }
 }
