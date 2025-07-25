@@ -67,24 +67,24 @@ This is because the script environment requires top-level statements to be compl
 
   * **Correct Solutions:**
 
-    1.  **Wrap it in a block (Recommended):** Place the `using` declaration inside a pair of curly braces `{}` to create a scope. The object will be disposed at the end of the block.
+    1.  **Use the traditional `using` statement:** This format is always valid.
 
         ```csharp
         // Correct way 1
-        {
-            using var client = new HttpClient();
-            return await client.GetStringAsync("https://www.google.com");
-        } // client is disposed here
-        ```
-
-    2.  **Use the traditional `using` statement:** This format is always valid.
-
-        ```csharp
-        // Correct way 2
         using (var client = new HttpClient())
         {
             return await client.GetStringAsync("https://www.google.com");
         }
+        ```
+
+    2.  **Wrap it in a block:** Place the `using` declaration inside a pair of curly braces `{}` to create a scope. The object will be disposed at the end of the block.
+
+        ```csharp
+        // Correct way 2
+        {
+            using var client = new HttpClient();
+            return await client.GetStringAsync("https://www.google.com");
+        } // client is disposed here
         ```
 
 ### 4. Code Examples
@@ -135,7 +135,7 @@ Your code can directly use the functionalities from the following core libraries
 
 ### Pre-imported Namespaces
 
-The following namespaces are already automatically imported, and you can use their classes and methods directly:
+The following namespaces are already automatically imported, and you can use their classes and methods directly and do not need to write `using` statements in your code:
 
   * `System`
   * `System.Collections`

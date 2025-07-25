@@ -4,10 +4,7 @@ using System.Threading.Channels;
 
 namespace Sdcb.CSharpRunner.Worker;
 
-public sealed class ConsoleCaptureWriter(
-    ChannelWriter<SseResponse> channel,
-    TextWriter tee,
-    bool isStdout) : TextWriter
+public sealed class ConsoleCaptureWriter(ChannelWriter<SseResponse> channel, bool isStdout) : TextWriter
 {
     private readonly StringBuilder _buffer = new(256);
 
@@ -27,9 +24,6 @@ public sealed class ConsoleCaptureWriter(
     private void WriteCore(string? txt)
     {
         if (string.IsNullOrEmpty(txt)) return;
-
-        // ① tee：仍写回真正的 Console，保持容器日志正常
-        tee.Write(txt);
 
         // ② 累积到内存，用于最后 EndSseResponse
         _buffer.Append(txt);

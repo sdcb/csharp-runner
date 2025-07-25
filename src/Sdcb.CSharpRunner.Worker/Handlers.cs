@@ -66,9 +66,9 @@ public static class Handlers
     public static async Task Run(HttpContext ctx, int maxTimeout = 30_000, int maxRuns = 0, IHostApplicationLifetime? life = null)
     {
         Stopwatch sw = Stopwatch.StartNew();
-        Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Received request");
         RunCodeRequest request = await JsonSerializer.DeserializeAsync(ctx.Request.Body, AppJsonContext.Default.RunCodeRequest)
             ?? throw new ArgumentException("Invalid request body", nameof(ctx));
+        Console.WriteLine($"Recieved request, elapsed: {sw.ElapsedMilliseconds}ms, timeout: {request.Timeout}, Code: \n{request.Code}");
 
         // SSE 头
         ctx.Response.Headers.ContentType = "text/event-stream; charset=utf-8";
@@ -86,8 +86,8 @@ public static class Handlers
 
             // 重定向 Console
             TextWriter oldOut = Console.Out, oldErr = Console.Error;
-            ConsoleCaptureWriter outCapture = new(channel.Writer, oldOut, true);
-            ConsoleCaptureWriter errCapture = new(channel.Writer, oldErr, false);
+            ConsoleCaptureWriter outCapture = new(channel.Writer, true);
+            ConsoleCaptureWriter errCapture = new(channel.Writer, false);
             Console.SetOut(outCapture);
             Console.SetError(errCapture);
 
