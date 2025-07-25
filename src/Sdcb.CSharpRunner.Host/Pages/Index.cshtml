@@ -58,6 +58,9 @@
             font-weight: 600;
             padding: 12px 30px;
             transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
         }
         .run-btn:hover:not(:disabled) {
             transform: translateY(-2px);
@@ -129,6 +132,7 @@
             border-top: 2px solid currentColor;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            display: inline-block;
         }
         @@keyframes spin {
             0% { transform: rotate(0deg); }
@@ -184,7 +188,7 @@ result</textarea>
                             <div>
                                 <button id="runBtn" class="run-btn">
                                     <span id="runBtnText">▶️ Run Code</span>
-                                    <div id="runBtnSpinner" class="loading-spinner d-none"></div>
+                                    <span id="runBtnSpinner" class="loading-spinner d-none"></span>
                                 </button>
                                 <button id="clearBtn" class="btn btn-outline-secondary ms-2">
                                     🗑️ Clear Output
