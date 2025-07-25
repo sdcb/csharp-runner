@@ -12,7 +12,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>C# Runner Playground</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
     <style>
         .playground-container {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -24,31 +23,40 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
         }
-        .code-editor {
-            background: #2d3748;
+        .monaco-editor-container {
             border-radius: 10px;
-            color: #e2e8f0;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            border: none;
-            resize: vertical;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 0 0 3px transparent;
+            transition: box-shadow 0.3s ease;
         }
-        .code-editor:focus {
-            background: #2d3748 !important;
-            color: #e2e8f0 !important;
+        .monaco-editor-container:focus-within {
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+        .fallback-editor {
+            font-family: 'Consolas', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            resize: vertical;
+            letter-spacing: 0px;
+        }
+        .fallback-editor:focus {
             outline: none;
+            border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
         }
         .output-container {
             background: #1a202c;
             border-radius: 10px;
             color: #e2e8f0;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-family: 'Consolas', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
             font-size: 13px;
             line-height: 1.4;
             max-height: 400px;
             overflow-y: auto;
+            letter-spacing: 0px;
         }
         .run-btn {
             background: linear-gradient(45deg, #667eea, #764ba2);
@@ -163,18 +171,15 @@
                     <!-- Code Editor Section -->
                     <div class="row mb-4">
                         <div class="col-12">
-                            <label for="codeEditor" class="form-label fw-bold mb-2">
+                            <label for="monaco-editor" class="form-label fw-bold mb-2">
                                 💻 Write your C# code
                             </label>
-                            <textarea id="codeEditor" class="form-control code-editor" rows="12" placeholder="Enter your C# code here...">Console.WriteLine("Hello, C# Runner!");
-Console.WriteLine($"Current time: {DateTime.Now}");
-
-// Calculation example
-int result = 3 + 4;
-Console.WriteLine($"3 + 4 = {result}");
-
-// Return result
-result</textarea>
+                            <!-- Monaco Editor Container -->
+                            <div id="monaco-editor" class="monaco-editor-container" style="height: 400px;"></div>
+                            <!-- Fallback textarea (only shown if Monaco fails to load) -->
+                            <textarea id="fallback-editor" class="form-control fallback-editor" rows="12" 
+                                      style="display: none; height: 400px;" 
+                                      placeholder="Enter your C# code here..."></textarea>
                         </div>
                     </div>
 
@@ -224,8 +229,10 @@ result</textarea>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Monaco Editor -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
     <script>
-        const codeEditor = document.getElementById('codeEditor');
+        const fallbackEditor = document.getElementById('fallback-editor');
         const timeoutInput = document.getElementById('timeoutInput');
         const runBtn = document.getElementById('runBtn');
         const runBtnText = document.getElementById('runBtnText');
@@ -234,12 +241,73 @@ result</textarea>
         const output = document.getElementById('output');
 
         let isRunning = false;
+        let monacoEditor = null;
+
+        // Default code
+        const defaultCode = `Console.WriteLine("Hello, C# Runner!");
+Console.WriteLine($"Current time: {DateTime.Now}");
+
+// Calculation example
+int result = 3 + 4;
+Console.WriteLine($"3 + 4 = {result}");
+
+// Return result
+result`;
+
+        // Initialize Monaco Editor
+        require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+            try {
+                monacoEditor = monaco.editor.create(document.getElementById('monaco-editor'), {
+                    value: defaultCode,
+                    language: 'csharp',
+                    theme: 'vs-dark',
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                    fontFamily: 'Consolas, Monaco, Menlo, "Ubuntu Mono", monospace',
+                    fontLigatures: false,
+                    letterSpacing: 0,
+                    automaticLayout: true,
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    wordWrap: 'on',
+                    lineNumbers: 'on',
+                    folding: true,
+                    selectOnLineNumbers: true,
+                    matchBrackets: 'always',
+                    autoIndent: 'full',
+                    formatOnPaste: true,
+                    formatOnType: true,
+                    suggestOnTriggerCharacters: true,
+                    acceptSuggestionOnEnter: 'on',
+                    tabCompletion: 'on',
+                    quickSuggestions: {
+                        other: true,
+                        comments: false,
+                        strings: false
+                    }
+                });
+
+                // Add Ctrl+Enter keybinding for running code
+                monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
+                    runBtn.click();
+                });
+
+                console.log('Monaco Editor initialized successfully');
+            } catch (error) {
+                console.error('Error initializing Monaco Editor:', error);
+                // Fallback: show the textarea if Monaco fails to load
+                fallbackEditor.value = defaultCode;
+                fallbackEditor.style.display = 'block';
+                document.getElementById('monaco-editor').style.display = 'none';
+            }
+        });
 
         // Run code
         runBtn.addEventListener('click', async () => {
             if (isRunning) return;
 
-            const code = codeEditor.value.trim();
+            const code = monacoEditor ? monacoEditor.getValue().trim() : fallbackEditor.value.trim();
             if (!code) {
                 alert('Please enter code to execute');
                 return;
@@ -359,6 +427,7 @@ result</textarea>
                 case 'compilerError':
                     div.className += ' output-compiler-error';
                     div.innerHTML = `<strong>[Compiler Error]</strong><br><pre>${escapeHtml(data.compilationError)}</pre>`;
+                    div.scrollTop = div.scrollHeight;
                     break;
                 
                 case 'end':
@@ -396,25 +465,6 @@ result</textarea>
             div.textContent = text;
             return div.innerHTML;
         }
-
-        // Code editor enhancement: Tab key support
-        codeEditor.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                const start = codeEditor.selectionStart;
-                const end = codeEditor.selectionEnd;
-                codeEditor.value = codeEditor.value.substring(0, start) + '    ' + codeEditor.value.substring(end);
-                codeEditor.selectionStart = codeEditor.selectionEnd = start + 4;
-            }
-        });
-
-        // Ctrl+Enter to run
-        codeEditor.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'Enter') {
-                e.preventDefault();
-                runBtn.click();
-            }
-        });
 
         // Worker count polling
         async function updateWorkerCount() {
