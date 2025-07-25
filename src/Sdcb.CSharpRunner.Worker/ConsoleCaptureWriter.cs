@@ -25,6 +25,11 @@ public sealed class ConsoleCaptureWriter(ChannelWriter<SseResponse> channel, boo
     {
         if (string.IsNullOrEmpty(txt)) return;
 
+        if (_buffer.Length + txt.Length > 4 * 1024 * 1024)
+        {
+            throw new Exception("Console output too large, please reduce the output size.");
+        }
+
         // ② 累积到内存，用于最后 EndSseResponse
         _buffer.Append(txt);
 

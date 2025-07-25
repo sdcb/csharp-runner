@@ -45,6 +45,7 @@ internal partial class AppJsonContext : JsonSerializerContext
         TypeInfoResolver = JsonTypeInfoResolver.Combine(
                 Default,
                 new DefaultJsonTypeInfoResolver()),
+        NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 }

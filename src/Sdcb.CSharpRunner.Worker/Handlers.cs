@@ -96,10 +96,32 @@ public static class Handlers
             {
                 await foreach (SseResponse msg in channel.Reader.ReadAllAsync(default))
                 {
-                    string json = JsonSerializer.Serialize(msg, AppJsonContext.FallbackOptions);
-                    await ctx.Response.WriteAsync($"data: {json}\n\n", default);
-                    await ctx.Response.Body.FlushAsync(default);
-                    oldOut.WriteLine($"Elased: {sw.ElapsedMilliseconds}ms, Sent: {json}");
+                    try
+                    {
+                        string json = JsonSerializer.Serialize(msg, AppJsonContext.FallbackOptions);
+                        if (json.Length > 5 * 1024 * 1024)
+                        {
+                            throw new Exception("SSE message too large, please reduce the output size.");
+                        }
+                        await ctx.Response.WriteAsync($"data: {json}\n\n", default);
+                        await ctx.Response.Body.FlushAsync(default);
+                        oldOut.WriteLine($"Elased: {sw.ElapsedMilliseconds}ms, Sent: {json}");
+                    }
+                    catch (Exception ex)
+                    {
+                        oldErr.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, error writing SSE: {ex}");
+                        if (msg is EndSseResponse)
+                        {
+                            EndSseResponse newEnd = new()
+                            {
+                                Error = "Error writing SSE: " + ex.Message,
+                                Elapsed = sw.ElapsedMilliseconds
+                            };
+                            string json = JsonSerializer.Serialize(msg, AppJsonContext.FallbackOptions);
+                            await ctx.Response.WriteAsync($"data: {json}\n\n", default);
+                            await ctx.Response.Body.FlushAsync(default);
+                        }
+                    }
                 }
                 oldOut.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, Finished streaming.");
             }, default);
