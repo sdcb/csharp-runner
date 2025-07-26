@@ -1,13 +1,18 @@
-﻿using Sdcb.CSharpRunner.Host.Mcp.Details;
+﻿using ModelContextProtocol;
+using ModelContextProtocol.Server;
 using Sdcb.CSharpRunner.Shared;
 using System.ComponentModel;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 
 namespace Sdcb.CSharpRunner.Host.Mcp;
 
+[McpServerToolType]
 public class Tools(RoundRobinPool<Worker> db, IHttpClientFactory http)
 {
-    [Description("""
+    internal static JsonSerializerOptions JsonOptions { get; } = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, WriteIndented = true, TypeInfoResolver = AppJsonContext.Default };
+
+    [McpServerTool, Description("""
 Run C# code in a sandboxed environment, default timeout: 30000(ms)
 
 The `code` parameter accepts a **string** that contains the C# code you wish to execute. This is like writing code in a special C# interactive environment (REPL), rather than creating a complete console application.
@@ -159,7 +164,7 @@ The following namespaces are already automatically imported, and you can use the
   * `System.Xml.Linq`
   * `System.Xml.XPath`
 """)]
-    public async Task<EndSseResponse> RunCode(string code, IProgress<ProgressNotificationValue> progress, int timeout = 30_000)
+    public async Task<FinalResponse> RunCode(string code, IProgress<ProgressNotificationValue> progress, int timeout = 30_000)
     {
         using RunLease<Worker> worker = await db.AcquireLeaseAsync();
         EndSseResponse endResponse = null!;
@@ -173,11 +178,13 @@ The following namespaces are already automatically imported, and you can use the
             {
                 progress.Report(new ProgressNotificationValue()
                 {
-                    Message = JsonSerializer.Serialize(buffer, AppJsonContext.Default.SseResponse)
+                    Message = JsonSerializer.Serialize(buffer, JsonOptions),
+                    Progress = 30,
+                    Total = 100,
                 });
             }
         }
 
-        return endResponse;
+        return endResponse.ToFinalResponse();
     }
 }

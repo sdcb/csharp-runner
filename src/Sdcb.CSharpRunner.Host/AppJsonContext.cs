@@ -8,6 +8,7 @@ namespace Sdcb.CSharpRunner.Host;
 [JsonSerializable(typeof(RunCodeRequest))]
 [JsonSerializable(typeof(SseResponse))]
 [JsonSerializable(typeof(JsonElement))]
+[JsonSerializable(typeof(FinalResponse))]
 public partial class AppJsonContext : JsonSerializerContext
 {
 }

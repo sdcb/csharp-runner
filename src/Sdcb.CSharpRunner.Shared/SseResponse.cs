@@ -66,4 +66,44 @@ public record EndSseResponse : SseResponse
 
     [JsonPropertyName("elapsed")]
     public required long Elapsed { get; init; }
+
+    public FinalResponse ToFinalResponse()
+    {
+        return new FinalResponse
+        {
+            StdOutput = StdOutput,
+            StdError = StdError,
+            Result = Result,
+            CompilerError = CompilerError,
+            Error = Error,
+            Elapsed = Elapsed
+        };
+    }
+}
+
+/// <summary>
+/// Represents the response for ending a Server-Sent Events (SSE) operation,  containing the standard output, standard
+/// error, result, and any associated error information.
+/// </summary>
+/// <remarks>This response is typically used to convey the outcome of an SSE operation,  including any output or
+/// errors generated during the operation.</remarks>
+public record FinalResponse
+{
+    [JsonPropertyName("stdOutput"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? StdOutput { get; init; }
+
+    [JsonPropertyName("stdError"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? StdError { get; init; }
+
+    [JsonPropertyName("result"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public object? Result { get; init; }
+
+    [JsonPropertyName("compilerError"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? CompilerError { get; init; }
+
+    [JsonPropertyName("error"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Error { get; init; }
+
+    [JsonPropertyName("elapsed")]
+    public required long Elapsed { get; init; }
 }

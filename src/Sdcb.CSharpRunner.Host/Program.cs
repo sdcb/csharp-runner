@@ -1,4 +1,6 @@
-using Sdcb.CSharpRunner.Host.Mcp.Details;
+﻿using Sdcb.CSharpRunner.Host.Mcp;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 
 namespace Sdcb.CSharpRunner.Host;
 
@@ -12,25 +14,18 @@ public class Program
 
         builder.Services.AddControllers();
         builder.Services.AddRazorPages();
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
         builder.Services.AddSingleton<RoundRobinPool<Worker>>();
         builder.Services.AddHttpClient();
-        builder.Services.AddTransient<Mcp.Tools>();
+        builder.Services
+            .AddMcpServer()
+            .WithHttpTransport()
+            .WithTools<Tools>(Tools.JsonOptions);
 
         WebApplication app = builder.Build();
 
-        // Configure the HTTP request pipeline.
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-        }
-
         app.UseAuthorization();
 
-        app.MapMcpEndpoint<Mcp.Tools>("/mcp");
+        app.MapMcp("/mcp");
         app.MapControllers();
         app.MapRazorPages();
 
