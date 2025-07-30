@@ -80,7 +80,7 @@ services:
         limits:
           cpus: 0.50
           memory: 256M
-          pids: 8
+          pids: 32
         reservations:
           cpus: 0.25
           memory: 128M
