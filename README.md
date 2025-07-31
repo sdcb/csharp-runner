@@ -50,6 +50,16 @@ curl -L https://raw.githubusercontent.com/sdcb/csharp-runner/refs/heads/master/d
 docker compose up -d
 ```
 
+For Windows:
+
+```bash
+# Download the docker-compose.yml file
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/sdcb/csharp-runner/refs/heads/master/docker-compose.yml" -OutFile "docker-compose.yml"
+
+# Start the services in detached mode
+docker compose -p csharp-runner up -d
+```
+
 Once deployed, open your browser to `http://localhost:5050` to access the web UI.
 
 ## 🔧 Configuration
