@@ -131,10 +131,6 @@ public static class Handlers
                 using CancellationTokenSource cts = new(Math.Min(maxTimeout, request.Timeout));
                 result = await CSharpScript
                     .EvaluateAsync<object?>(request.Code, _scriptOpt, cancellationToken: cts.Token);
-                if (result != null)
-                {
-                    channel.Writer.TryWrite(new ResultSseResponse { Result = result });
-                }
             }
             catch (CompilationErrorException ex)
             {

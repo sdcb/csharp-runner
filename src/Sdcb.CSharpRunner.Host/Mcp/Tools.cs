@@ -13,158 +13,63 @@ public class Tools(RoundRobinPool<Worker> db, IHttpClientFactory http)
     internal static JsonSerializerOptions JsonOptions { get; } = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, WriteIndented = true, TypeInfoResolver = AppJsonContext.Default };
 
     [McpServerTool, Description("""
-Run C# code in a sandboxed environment, default timeout: 30000(ms)
+**工具使用指南：`run_code` C#代码执行器**
 
-The `code` parameter accepts a **string** that contains the C# code you wish to execute. This is like writing code in a special C# interactive environment (REPL), rather than creating a complete console application.
+你已集成 `run_code` 工具，它能执行C#代码片段。请用它来回答需要精确计算、实时数据或复杂逻辑处理的问题，超时时间为30秒。
 
------
+---
+**何时使用 `run_code`：**
 
-## Code Specification
+* **精确计算与数据处理**
+    * **数学运算**:
+        * 用户提问: "2的64次方减1是多少？"
+        * `run_code` 代码: `(BigInteger.Pow(2, 64) - 1).ToString()`
+    * **日期与时间**:
+        * 用户提问: "计算一下2025年圣诞节是星期几？"
+        * `run_code` 代码: `new DateTime(2025, 12, 25).DayOfWeek.ToString()`
+    * **加密与哈希**:
+        * 用户提问: "计算字符串 'Gemini' 的SHA256哈希值。"
+        * `run_code` 代码: `string.Concat(SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes("Gemini")).Select(b => b.ToString("x2")))`
+    * **数据转换 (LINQ)**:
+        * 用户提问: "将列表 `["anna", "bob", "CATHY"]` 整理成首字母大写并排序。"
+        * `run_code` 代码: `new[] { "anna", "bob", "CATHY" }.Select(n => char.ToUpper(n[0]) + n.Substring(1).ToLower()).OrderBy(n => n).ToList()`
 
-### 1. Basic Format
+* **文本处理与解析**
+    * **JSON 操作**:
+        * 用户提问: "从JSON `{\"user\": {\"name\": \"John\"}}` 中提取用户名。"
+        * `run_code` 代码: `JsonDocument.Parse("{\"user\": {\"name\": \"John\"}}").RootElement.GetProperty("user").GetProperty("name").GetString()`
+    * **正则表达式**:
+        * 用户提问: "从文本 '我的邮箱是 test@example.com' 中提取出电子邮件地址。"
+        * `run_code` 代码: `Regex.Match("我的邮箱是 test@example.com", @"[\w]+@[\w]+\.\w+").Value`
 
-You can write either **expressions** or **statements**.
+* **实时网络请求**
+    * **API调用**:
+        * 用户提问: "看看博客园有什么最新头条"
+        * `run_code` 代码: `using (var client = new HttpClient()) { var response = await client.GetAsync("https://cnblogs.com"); return await response.Content.ReadAsStringAsync(); }`
 
-  * **Expression:** A piece of code that can be evaluated to a value. The result of the last expression will be the return value of the entire code.
-      * Example: `"1 + 2"`, returns `3`.
-      * Example: `"Math.Sqrt(16)"`, returns `4`.
-  * **Statements:** A series of operational instructions, which can include variable definitions, loops, conditional judgments, etc. You can use the `return` keyword to specify the return value.
-      * Example: `"int a = 10; int b = 20; return a + b;"`, returns `30`.
-      * If there is no `return` statement and the last line is an expression, the value of that expression will be returned. For example: `"var x = 5; x * 10"`, returns `50`.
+* **算法逻辑验证**
+    * **确定性问题**:
+        * 用户提问: "判断1997是不是一个质数。"
+        * `run_code` 代码: `int n = 1997; if (n <= 1) return false; for (int i = 2; i * i <= n; i++) { if (n % i == 0) return false; } return true;`
 
-### 2. Forbidden Format ❌
+---
+**何时避免使用 `run_code`：**
 
-You **cannot** provide a complete program structure that includes a `Main` method. Because the code is not compiled and run as a standalone program, it does not have a `Main` function as an entry point.
+* 开放式问题（如寻求解释或建议）。
+* 需要使用外部NuGet包。
+* 需要跨次调用维持状态。
+* 长时间运行或高资源消耗的任务。
+* 需要访问本地文件或数据库。
+* 需要构建用户界面（UI）。
 
-The following format is **incorrect** and will not run:
+---
+**核心原则：**
 
-```csharp
-// Incorrect Example
-public class Program
-{
-    public static void Main(string[] args)
-    {
-        Console.WriteLine("Hello, World!");
-    }
-}
-```
-
-If you want to achieve the same effect as the code above, you should write it directly:
-
-```csharp
-// Correct Example
-Console.WriteLine("Hello, World!");
-```
-
-### 3. Special Note on `using` Declarations 💡
-
-Please note, the **`using` declaration** syntax introduced in C# 8.0 (e.g., `using var client = new HttpClient();`) is **not directly supported at the top level** of the script.
-
-This is because the script environment requires top-level statements to be complete statement blocks. A `using` declaration is considered a local variable declaration and requires a clear scope (a code block `{...}`).
-
-  * **Incorrect Example (will cause a compilation error):**
-
-    ```csharp
-    // This will fail
-    using var client = new HttpClient();
-    return await client.GetStringAsync("https://www.google.com");
-    ```
-
-  * **Correct Solutions:**
-
-    1.  **Use the traditional `using` statement:** This format is always valid.
-
-        ```csharp
-        // Correct way 1
-        using (var client = new HttpClient())
-        {
-            return await client.GetStringAsync("https://www.google.com");
-        }
-        ```
-
-    2.  **Wrap it in a block:** Place the `using` declaration inside a pair of curly braces `{}` to create a scope. The object will be disposed at the end of the block.
-
-        ```csharp
-        // Correct way 2
-        {
-            using var client = new HttpClient();
-            return await client.GetStringAsync("https://www.google.com");
-        } // client is disposed here
-        ```
-
-### 4. Code Examples
-
-  * **Simple Calculation:**
-    ```json
-    { "code": "3.14 * 10 * 10" }
-    ```
-  * **Using a Loop and Console Output:**
-    ```json
-    {
-      "code": "for(int i = 0; i < 5; i++) { Console.WriteLine($\"The current number is: {i}\"); } return \"Loop finished\";"
-    }
-    ```
-    This code will print 5 lines of text and finally return the string "Loop finished".
-  * **Using a LINQ Query:**
-    ```json
-    {
-      "code": "var numbers = new int[] { 1, 2, 3, 4, 5, 6 }; var evenNumbers = numbers.Where(n => n % 2 == 0).ToList(); return evenNumbers;"
-    }
-    ```
-    This code will return a list containing `{ 2, 4, 6 }`.
-
-### 5. Output and Return
-
-  * **Console Output (`Console.WriteLine`)**: You can use `Console.WriteLine` or `Console.Error.WriteLine` to print information. This output is captured in real-time and returned.
-  * **Return Value (`return`)**: The return value of the code is the result of the last evaluated expression or the value explicitly specified by a `return` statement.
-
------
-
-## Environment Preset
-
-When your code is executed, the system has already automatically referenced common assemblies and imported namespaces. You do not need to write statements like `using System;` yourself.
-
-### Pre-Referenced Assemblies
-
-Your code can directly use the functionalities from the following core libraries:
-
-  * .NET Core Libraries (`System.Private.CoreLib.dll`, `System.Runtime.dll`)
-  * `System.Linq.dll` (LINQ features)
-  * `System.Console.dll` (Console features)
-  * `System.Threading.Thread.dll` (Multithreading features)
-  * `System.Xml.XDocument.dll` (XML LINQ features)
-  * `System.Net.Http.dll` (`HttpClient` features)
-  * `System.Text.Json.dll` (JSON serialization features)
-  * `System.Security.Cryptography.Algorithms.dll` (Cryptography algorithms)
-  * `System.Runtime.Numerics.dll` (`BigInteger`, etc.)
-
-### Pre-imported Namespaces
-
-The following namespaces are already automatically imported, and you can use their classes and methods directly and do not need to write `using` statements in your code:
-
-  * `System`
-  * `System.Collections`
-  * `System.Collections.Concurrent`
-  * `System.Collections.Generic`
-  * `System.Diagnostics`
-  * `System.IO`
-  * `System.Linq`
-  * `System.Net`
-  * `System.Net.Http`
-  * `System.Numerics`
-  * `System.Reflection`
-  * `System.Security`
-  * `System.Security.Cryptography`
-  * `System.Text`
-  * `System.Text.Json`
-  * `System.Text.RegularExpressions`
-  * `System.Threading`
-  * `System.Threading.Tasks`
-  * `System.Xml`
-  * `System.Xml.Linq`
-  * `System.Xml.XPath`
+* **精确优先**: 对于有确定答案的问题，优先执行代码，而不是依赖记忆。
+* **任务分解**: 将复杂问题拆解，用代码解决其中的确定性步骤。
+* **善用工具**: 积极利用代码执行能力，提供更可靠和实时的回答。
 """)]
-    public async Task<FinalResponse> RunCode(string code, IProgress<ProgressNotificationValue> progress, int timeout = 30_000)
+    public async Task<string> RunCode(string code, IProgress<ProgressNotificationValue> progress, int timeout = 30_000)
     {
         using RunLease<Worker> worker = await db.AcquireLeaseAsync();
         EndSseResponse endResponse = null!;
