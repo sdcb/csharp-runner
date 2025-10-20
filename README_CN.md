@@ -47,6 +47,16 @@ curl -L https://raw.githubusercontent.com/sdcb/csharp-runner/refs/heads/master/d
 docker compose up -d
 ```
 
+对于windows：
+
+```bash
+# 下载 docker-compose.yml 文件
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/sdcb/csharp-runner/refs/heads/master/docker-compose.yml" -OutFile "docker-compose.yml"
+
+# 启动服务 (后台运行)
+docker compose -p csharp-runner up -d
+```
+
 部署成功后，在浏览器中打开 `http://localhost:5050` 即可访问 Web 操作界面。
 
 ## 🔧 配置
