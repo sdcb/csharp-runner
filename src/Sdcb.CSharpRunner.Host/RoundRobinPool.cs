@@ -45,6 +45,8 @@ public sealed class RoundRobinPool<T> where T : IHaveMaxRuns
             Add(item);
     }
 
+    public event Action<int>? CountChanged;
+
     public int Count
     {
         get
@@ -63,6 +65,7 @@ public sealed class RoundRobinPool<T> where T : IHaveMaxRuns
             {
                 _queue.Enqueue(item);
                 _sema.Release();
+                CountChanged?.Invoke(_alive.Count);
             }
         }
     }
@@ -80,6 +83,7 @@ public sealed class RoundRobinPool<T> where T : IHaveMaxRuns
             {
                 _alive.Remove(item);
                 _sema.Wait(0);                          // 抵消之前的 Release
+                CountChanged?.Invoke(_alive.Count);
                 return true;
             }
 
@@ -129,6 +133,7 @@ public sealed class RoundRobinPool<T> where T : IHaveMaxRuns
             if (exhausted || manuallyRemoved)
             {
                 _alive.Remove(item);
+                CountChanged?.Invoke(_alive.Count);
                 return;                              // 不再可用，不要 Release()
             }
 

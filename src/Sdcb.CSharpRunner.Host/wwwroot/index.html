@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>C# Runner Playground</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/site.css" />
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="app-title">
+                <img src="/favicon.svg" alt=".NET Logo" width="24" height="24" />
+                <span>C# Runner Playground</span>
+            </div>
+            <div class="worker-status">
+                <div title="Worker Status">
+                    <span id="statusDot" class="status-dot ready"></span>
+                    <span id="statusText">Ready</span>
+                </div>
+                <div>
+                    <i class="fa-solid fa-server"></i>
+                    <span>Workers: <strong id="workerCount">...</strong></span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content (Split View) -->
+        <main class="app-main">
+            <!-- Left Pane: Editor -->
+            <div class="editor-pane">
+                <div class="pane-toolbar">
+                    <span class="toolbar-title"><i class="fa-solid fa-code"></i> Program.cs</span>
+                    <div class="toolbar-actions">
+                        <div class="d-flex align-items-center" style="gap: 5px; font-size: 0.8rem; color: var(--text-secondary);">
+                            <label for="timeoutInput">Timeout(ms):</label>
+                            <input type="number" id="timeoutInput" value="30000" min="1000" max="60000" 
+                                   style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); width: 70px; padding: 2px 5px; border-radius: 2px;">
+                        </div>
+                        <button id="runBtn" class="btn-primary-custom">
+                            <i class="fa-solid fa-play"></i> Run
+                        </button>
+                    </div>
+                </div>
+                <div id="monaco-editor"></div>
+                <textarea id="fallback-editor" style="display: none; width: 100%; height: 100%; background: var(--bg-primary); color: var(--text-primary); border: none; padding: 10px; font-family: monospace;"></textarea>
+            </div>
+
+            <!-- Right Pane: Output -->
+            <div class="output-pane">
+                <div class="pane-toolbar">
+                    <span class="toolbar-title"><i class="fa-solid fa-terminal"></i> Terminal Output</span>
+                    <div class="toolbar-actions">
+                        <button id="clearBtn" class="btn-icon" title="Clear Output">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="output" class="output-content">
+                    <div class="log-system">Ready to execute C# code...</div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div>
+                <span>&copy; <span id="year"></span> Sdcb.CSharpRunner</span>
+            </div>
+            <div>
+                <a href="https://github.com/sdcb/csharp-runner" target="_blank" class="footer-link">
+                    <i class="fa-brands fa-github"></i> GitHub
+                </a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- SignalR Client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <!-- Monaco Editor Loader -->
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    
+    <script>
+        // Set current year
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // DOM Elements
+        const fallbackEditor = document.getElementById('fallback-editor');
+        const timeoutInput = document.getElementById('timeoutInput');
+        const runBtn = document.getElementById('runBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const output = document.getElementById('output');
+        const workerCountEl = document.getElementById('workerCount');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        let isRunning = false;
+        let monacoEditor = null;
+
+        // Default Code
+        const defaultCode = `for (int i = 0; i < 5; ++i)
+{
+    Console.WriteLine($"Hello, C# {i}");
+    await Task.Delay(200);
+}
+`;
+
+        // Initialize Monaco Editor
+        require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+        require(['vs/editor/editor.main'], function () {
+            try {
+                monacoEditor = monaco.editor.create(document.getElementById('monaco-editor'), {
+                    value: defaultCode,
+                    language: 'csharp',
+                    theme: 'vs-dark',
+                    fontSize: 14,
+                    fontFamily: "'Consolas', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
+                    minimap: { enabled: false },
+                    automaticLayout: true,
+                    scrollBeyondLastLine: false,
+                    wordWrap: 'on',
+                    padding: { top: 10, bottom: 10 }
+                });
+
+                // Ctrl+Enter to Run
+                monacoEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
+                    runBtn.click();
+                });
+                
+                // Resize observer to handle window resize better if needed
+                window.addEventListener('resize', () => {
+                    monacoEditor.layout();
+                });
+
+            } catch (error) {
+                console.error('Monaco init failed:', error);
+                fallbackEditor.value = defaultCode;
+                fallbackEditor.style.display = 'block';
+                document.getElementById('monaco-editor').style.display = 'none';
+            }
+        });
+
+        // Run Button Logic
+        runBtn.addEventListener('click', async () => {
+            if (isRunning) return;
+
+            const code = monacoEditor ? monacoEditor.getValue().trim() : fallbackEditor.value.trim();
+            if (!code) return;
+
+            setRunningState(true);
+            clearOutput();
+            appendLog('system', 'Compiling and running...', 'loading-msg');
+
+            try {
+                const response = await fetch('/api/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code: code,
+                        timeout: parseInt(timeoutInput.value) || 30000
+                    })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.substring(6));
+                                processOutputData(data);
+                            } catch (e) { console.error(e); }
+                        }
+                    }
+                }
+            } catch (error) {
+                removeLoadingMsg();
+                appendLog('error', `Request failed: ${error.message}`);
+            } finally {
+                setRunningState(false);
+            }
+        });
+
+        clearBtn.addEventListener('click', clearOutput);
+
+        function setRunningState(running) {
+            isRunning = running;
+            runBtn.disabled = running;
+            runBtn.innerHTML = running 
+                ? '<div class="spinner"></div> Running...' 
+                : '<i class="fa-solid fa-play"></i> Run';
+        }
+
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+
+        function removeLoadingMsg() {
+            const msg = document.getElementById('loading-msg');
+            if (msg) msg.remove();
+        }
+
+        function processOutputData(data) {
+            removeLoadingMsg();
+            switch (data.kind) {
+                case 'stdout': appendLog('stdout', data.stdOutput); break;
+                case 'stderr': appendLog('stderr', data.stdError); break;
+                case 'result': appendLog('result', `> Return: ${JSON.stringify(data.result)}`); break;
+                case 'error': appendLog('error', data.error); break;
+                case 'compilerError': appendLog('compiler-error', data.compilationError); break;
+                case 'end': 
+                    appendLog('system', `Done in ${data.elapsed}ms.`); 
+                    break;
+            }
+        }
+
+        function appendLog(type, text, id) {
+            if (!text) return;
+            const div = document.createElement('div');
+            div.className = `output-line log-${type}`;
+            if (id) div.id = id;
+            div.textContent = text; // Use textContent for safety, unless we need HTML
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // Initialize SignalR connection
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/hubs/worker")
+            .withAutomaticReconnect()
+            .build();
+
+        function updateStatus(count) {
+            workerCountEl.textContent = count;
+            if (count > 0) {
+                statusDot.className = 'status-dot ready';
+                statusText.textContent = 'Ready';
+            } else {
+                statusDot.className = 'status-dot busy';
+                statusText.textContent = 'Busy';
+            }
+        }
+
+        connection.on("UpdateWorkerCount", (count) => {
+            updateStatus(count);
+        });
+
+        async function fetchWorkerCount() {
+            try {
+                const res = await fetch('/api/worker/count');
+                if (res.ok) {
+                    const count = await res.json();
+                    updateStatus(count);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // Fetch immediately
+        fetchWorkerCount();
+
+        async function startSignalR() {
+            try {
+                await connection.start();
+                console.log("SignalR Connected.");
+                // Sync again after connection
+                await fetchWorkerCount();
+            } catch (err) {
+                console.error("SignalR Connection Error: ", err);
+                setTimeout(startSignalR, 5000);
+            }
+        }
+
+        startSignalR();
+
+    </script>
+</body>
+</html>
