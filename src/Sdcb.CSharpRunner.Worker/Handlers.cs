@@ -1,10 +1,18 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Scripting;
+﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Scripting;
 using Sdcb.CSharpRunner.Shared;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO.Compression;
+using System.Net;
 using System.Numerics;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Channels;
 using System.Xml.Linq;
 
@@ -37,14 +45,21 @@ public static class Handlers
             typeof(ValueTask).Assembly,
             typeof(HttpClient).Assembly,
             typeof(JsonSerializer).Assembly,
+            typeof(JsonNode).Assembly,
             typeof(SHA256).Assembly,
-            typeof(BigInteger).Assembly)
+            typeof(BigInteger).Assembly,
+            typeof(GZipStream).Assembly,
+            typeof(WebUtility).Assembly,
+            typeof(CultureInfo).Assembly,
+            typeof(TimeZoneInfo).Assembly)
         .AddImports(
             "System",
             "System.Collections",
             "System.Collections.Generic",
             "System.Diagnostics",
+            "System.Globalization",
             "System.IO",
+            "System.IO.Compression",
             "System.Linq",
             "System.Reflection",
             "System.Text",
@@ -58,10 +73,159 @@ public static class Handlers
             "System.Net",
             "System.Net.Http",
             "System.Text.Json",
+            "System.Text.Json.Nodes",
             "System.Security",
             "System.Security.Cryptography",
             "System.Numerics");
     private static int runCount = 0;
+
+    /// <summary>
+    /// 检测代码是否为 Program 模式（包含类定义和静态 Main 方法）
+    /// </summary>
+    private static bool IsProgramMode(string code)
+    {
+        SyntaxTree tree = CSharpSyntaxTree.ParseText(code);
+        CompilationUnitSyntax root = tree.GetCompilationUnitRoot();
+
+        var classDeclarations = root.DescendantNodes().OfType<ClassDeclarationSyntax>();
+
+        foreach (var classDecl in classDeclarations)
+        {
+            var mainMethods = classDecl.Members
+                .OfType<MethodDeclarationSyntax>()
+                .Where(m => m.Identifier.Text == "Main" &&
+                            m.Modifiers.Any(mod => mod.IsKind(SyntaxKind.StaticKeyword)));
+
+            if (mainMethods.Any())
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 执行 Program 模式的代码（带有类和静态 Main 方法）
+    /// </summary>
+    private static async Task<object?> ExecuteProgramModeAsync(string code, CancellationToken cancellationToken)
+    {
+        // 为 Program 模式添加默认的 using 语句（如果代码中没有以 using 开头）
+        string usings = string.Join("\n", _scriptOpt.Imports.Select(ns => $"using {ns};"));
+        if (!code.TrimStart().StartsWith("using"))
+        {
+            code = usings + "\n\n" + code;
+        }
+
+        // 获取有效的元数据引用（过滤掉 UnresolvedMetadataReference）
+        var references = _scriptOpt.MetadataReferences
+            .Where(r => r is not UnresolvedMetadataReference)
+            .ToList();
+
+        // 确保基础引用存在
+        var coreAssemblies = new[]
+        {
+            typeof(object).Assembly,
+            typeof(Console).Assembly,
+            typeof(Task).Assembly,
+            typeof(Enumerable).Assembly,
+            typeof(XDocument).Assembly,
+            typeof(HttpClient).Assembly,
+            typeof(JsonSerializer).Assembly,
+            typeof(JsonNode).Assembly,
+            typeof(SHA256).Assembly,
+            typeof(BigInteger).Assembly,
+            typeof(GZipStream).Assembly,
+            typeof(WebUtility).Assembly,
+            typeof(CultureInfo).Assembly,
+            typeof(TimeZoneInfo).Assembly,
+        };
+
+        foreach (var asm in coreAssemblies)
+        {
+            var reference = MetadataReference.CreateFromFile(asm.Location);
+            if (!references.Any(r => r.Display == reference.Display))
+            {
+                references.Add(reference);
+            }
+        }
+
+        // 添加 System.Runtime 引用（.NET Core/5+ 需要）
+        var runtimeAssembly = Assembly.Load("System.Runtime");
+        references.Add(MetadataReference.CreateFromFile(runtimeAssembly.Location));
+
+        var compilation = CSharpCompilation.Create(
+            "DynamicAssembly_" + Guid.NewGuid().ToString("N"),
+            new[] { CSharpSyntaxTree.ParseText(code) },
+            references,
+            new CSharpCompilationOptions(OutputKind.ConsoleApplication)
+                .WithAllowUnsafe(true));
+
+        // 编译到内存
+        using var ms = new MemoryStream();
+        var emitResult = compilation.Emit(ms, cancellationToken: cancellationToken);
+
+        if (!emitResult.Success)
+        {
+            var errors = emitResult.Diagnostics
+                .Where(d => d.Severity == DiagnosticSeverity.Error)
+                .Select(d => d.ToString());
+            throw new CompilationErrorException(string.Join("\n", errors), emitResult.Diagnostics);
+        }
+
+        ms.Seek(0, SeekOrigin.Begin);
+        var assembly = Assembly.Load(ms.ToArray());
+
+        // 查找入口点
+        var entryPoint = assembly.EntryPoint 
+            ?? throw new InvalidOperationException("No entry point found in the compiled assembly.");
+
+        // 执行 Main 方法
+        object? result = null;
+        var parameters = entryPoint.GetParameters();
+        object?[] args = parameters.Length > 0 ? new object?[] { Array.Empty<string>() } : Array.Empty<object?>();
+
+        var invokeResult = entryPoint.Invoke(null, args);
+
+        // 处理异步 Main 方法
+        if (invokeResult is Task task)
+        {
+            await task.WaitAsync(cancellationToken);
+
+            // 检查是否有返回值 (Task<T>)
+            var taskType = task.GetType();
+            if (taskType.IsGenericType)
+            {
+                var resultProperty = taskType.GetProperty("Result");
+                result = resultProperty?.GetValue(task);
+            }
+        }
+        else if (invokeResult is ValueTask valueTask)
+        {
+            await valueTask.AsTask().WaitAsync(cancellationToken);
+        }
+        else
+        {
+            result = invokeResult;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 智能执行代码：自动检测是 Script 模式还是 Program 模式
+    /// </summary>
+    private static async Task<object?> ExecuteCodeAsync(string code, CancellationToken cancellationToken)
+    {
+        if (IsProgramMode(code))
+        {
+            return await ExecuteProgramModeAsync(code, cancellationToken);
+        }
+        else
+        {
+            return await CSharpScript.EvaluateAsync<object?>(code, _scriptOpt, cancellationToken: cancellationToken);
+        }
+    }
 
     public static async Task Run(HttpContext ctx, int maxTimeout = 30_000, int maxRuns = 0, IHostApplicationLifetime? life = null)
     {
@@ -129,8 +293,7 @@ public static class Handlers
             try
             {
                 using CancellationTokenSource cts = new(Math.Min(maxTimeout, request.Timeout));
-                result = await CSharpScript
-                    .EvaluateAsync<object?>(request.Code, _scriptOpt, cancellationToken: cts.Token);
+                result = await ExecuteCodeAsync(request.Code, cts.Token);
             }
             catch (CompilationErrorException ex)
             {

@@ -16,11 +16,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - { tag: nanoserver-1809,     runs-on: windows-latest, os: win,        arch: x64,   args: /p:ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:9.0-nanoserver-1809 }
-          - { tag: nanoserver-ltsc2022, runs-on: windows-latest, os: win,        arch: x64,   args: /p:ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:9.0-nanoserver-ltsc2022 }
-          - { tag: nanoserver-ltsc2025, runs-on: windows-latest, os: win,        arch: x64,   args: /p:ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:9.0-nanoserver-ltsc2025 }
-          - { tag: linux-arm64,         runs-on: ubuntu-22.04,   os: linux-musl, arch: arm64, args: /p:ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:9.0-alpine-composite }
-          - { tag: linux-x64,           runs-on: ubuntu-22.04,   os: linux-musl, arch: x64,   args: /p:ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:9.0-alpine-composite }
+          - { tag: nanoserver-ltsc2022, runs-on: windows-latest, os: win,        arch: x64,   args: /p:ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:10.0-nanoserver-ltsc2022 }
+          - { tag: nanoserver-ltsc2025, runs-on: windows-latest, os: win,        arch: x64,   args: /p:ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:10.0-nanoserver-ltsc2025 }
+          - { tag: linux-arm64,         runs-on: ubuntu-22.04,   os: linux-musl, arch: arm64, args: /p:ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:10.0-alpine-composite }
+          - { tag: linux-x64,           runs-on: ubuntu-22.04,   os: linux-musl, arch: x64,   args: /p:ContainerBaseImage=mcr.microsoft.com/dotnet/aspnet:10.0-alpine-composite }
     runs-on: ${{ matrix.runs-on }}
     steps:
     - uses: actions/checkout@v4
@@ -57,13 +56,8 @@ jobs:
             docker manifest create --amend ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ env.DOCKER_ID }}:"$TAG" \
               ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ env.DOCKER_ID }}:r-${{ github.run_number }}-linux-x64 \
               ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ env.DOCKER_ID }}:r-${{ github.run_number }}-linux-arm64 \
-              ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ env.DOCKER_ID }}:r-${{ github.run_number }}-nanoserver-1809 \
               ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ env.DOCKER_ID }}:r-${{ github.run_number }}-nanoserver-ltsc2022 \
               ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ env.DOCKER_ID }}:r-${{ github.run_number }}-nanoserver-ltsc2025
-              
-            docker manifest annotate ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ env.DOCKER_ID }}:"$TAG" \
-              ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ env.DOCKER_ID }}:r-${{ github.run_number }}-nanoserver-1809 \
-              --os-version 10.0.17763.6532
 
             docker manifest annotate ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ env.DOCKER_ID }}:"$TAG" \
               ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_NAMESPACE }}/${{ env.DOCKER_ID }}:r-${{ github.run_number }}-nanoserver-ltsc2022 \

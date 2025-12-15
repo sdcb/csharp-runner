@@ -1,6 +1,6 @@
 # 🚀 C\# Runner
 
-[![.NET 9](https://img.shields.io/badge/.NET-9.0-512BD4.svg)](https://dotnet.microsoft.com/download/dotnet/9.0)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-512BD4.svg)](https://dotnet.microsoft.com/download/dotnet/10.0)
 [![Docker-Host](https://img.shields.io/docker/v/sdcb/csharp-runner-host?sort=semver&logo=docker&label=host)](https://hub.docker.com/r/sdcb/csharp-runner-host)
 [![Docker-Worker](https://img.shields.io/docker/v/sdcb/csharp-runner-worker?sort=semver&logo=docker&label=worker)](https://hub.docker.com/r/sdcb/csharp-runner-worker)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
