@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.Scripting" Version="5.0.0" />
+    <InternalsVisibleTo Include="Sdcb.CSharpRunner.Worker.Tests" />
   </ItemGroup>
 
   <ItemGroup>
