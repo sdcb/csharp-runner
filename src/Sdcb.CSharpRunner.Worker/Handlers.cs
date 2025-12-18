@@ -274,14 +274,26 @@ public static class Handlers
                     catch (Exception ex)
                     {
                         oldErr.WriteLine($"Elapsed: {sw.ElapsedMilliseconds}ms, error writing SSE: {ex}");
-                        if (msg is EndSseResponse)
+
+                        if (msg is EndSseResponse end)
                         {
                             EndSseResponse newEnd = new()
                             {
                                 Error = "Error writing SSE: " + ex.Message,
                                 Elapsed = sw.ElapsedMilliseconds
                             };
-                            string json = JsonSerializer.Serialize(msg, AppJsonContext.FallbackOptions);
+
+                            bool isSerializeIssue = ex.Source == "System.Text.Json" && ex.Message.StartsWith("The type '");
+                            SseResponse output = isSerializeIssue ? end with
+                            {
+                                Result = end.Result switch
+                                {
+                                    null => null,
+                                    var x => $"[{end.Result.GetType().FullName}]",
+                                }
+                            } : end;
+
+                            string json = JsonSerializer.Serialize(output, AppJsonContext.FallbackOptions);
                             await ctx.Response.WriteAsync($"data: {json}\n\n", default);
                             await ctx.Response.Body.FlushAsync(default);
                         }
