@@ -219,10 +219,12 @@
             switch (data.kind) {
                 case 'stdout': appendLog('stdout', data.stdOutput); break;
                 case 'stderr': appendLog('stderr', data.stdError); break;
-                case 'result': appendLog('result', `> Return: ${JSON.stringify(data.result)}`); break;
                 case 'error': appendLog('error', data.error); break;
                 case 'compilerError': appendLog('compiler-error', data.compilationError); break;
                 case 'end': 
+                    if (data.result !== undefined && data.result !== null) {
+                        appendLog('result', `> Return: ${typeof data.result === 'string' ? data.result : JSON.stringify(data.result)}`);
+                    }
                     appendLog('system', `Done in ${data.elapsed}ms.`); 
                     break;
             }
