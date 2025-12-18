@@ -123,25 +123,12 @@ public static class Handlers
             .ToList();
 
         // 确保基础引用存在
-        var coreAssemblies = new[]
-        {
-            typeof(object).Assembly,
-            typeof(Console).Assembly,
-            typeof(Task).Assembly,
-            typeof(Enumerable).Assembly,
-            typeof(XDocument).Assembly,
-            typeof(HttpClient).Assembly,
-            typeof(JsonSerializer).Assembly,
-            typeof(JsonNode).Assembly,
-            typeof(SHA256).Assembly,
-            typeof(BigInteger).Assembly,
-            typeof(GZipStream).Assembly,
-            typeof(WebUtility).Assembly,
-            typeof(CultureInfo).Assembly,
-            typeof(TimeZoneInfo).Assembly,
-        };
+        // 改进：从当前 AppDomain 加载所有已加载的程序集作为引用
+        // 这可以解决 System.Private.Uri 等依赖项缺失的问题
+        var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => !a.IsDynamic && !string.IsNullOrWhiteSpace(a.Location));
 
-        foreach (var asm in coreAssemblies)
+        foreach (var asm in loadedAssemblies)
         {
             var reference = MetadataReference.CreateFromFile(asm.Location);
             if (!references.Any(r => r.Display == reference.Display))
@@ -149,10 +136,6 @@ public static class Handlers
                 references.Add(reference);
             }
         }
-
-        // 添加 System.Runtime 引用（.NET Core/5+ 需要）
-        var runtimeAssembly = Assembly.Load("System.Runtime");
-        references.Add(MetadataReference.CreateFromFile(runtimeAssembly.Location));
 
         var compilation = CSharpCompilation.Create(
             "DynamicAssembly_" + Guid.NewGuid().ToString("N"),

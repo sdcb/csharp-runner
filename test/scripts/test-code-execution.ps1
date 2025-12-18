@@ -223,6 +223,34 @@ public class Program
 '@
 if (Invoke-CodeTest -TestName "Program 带 using 语句" -Code $withUsingsCode -ExpectedOutput "Sum 1-10: 55") { $passedTests++ }
 
+# 测试 11: Program 模式 HttpClient 测试 (验证程序集引用修复)
+$totalTests++
+$httpClientProgramCode = @'
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
+
+public static class Program
+{
+    public static async Task Main()
+    {
+        try
+        {
+            using (var client = new HttpClient())
+            {
+                var response = await client.GetAsync("https://www.baidu.com/");
+                Console.WriteLine("Status: " + response.StatusCode);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+        }
+    }    
+}
+'@
+if (Invoke-CodeTest -TestName "Program 模式 HttpClient 测试" -Code $httpClientProgramCode -ExpectedOutput "Status: OK") { $passedTests++ }
+
 # ============================================
 # 测试结果汇总
 # ============================================
